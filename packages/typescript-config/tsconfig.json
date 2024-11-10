@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "strict": true,
+    "moduleResolution": "Bundler",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    // Remove rootDir - let consumer set it!
+    // "rootDir": "./src" ❌
+  },
+  // Remove include/exclude - let consumer set them! ❌
+  // "include": ["src/**/*"],
+  // "exclude": ["node_modules", "./dist"]
+}

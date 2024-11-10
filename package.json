@@ -1,5 +1,5 @@
 {
-  "name": "basic",
+  "name": "dumpanddone",
   "private": true,
   "scripts": {
     "build": "turbo build",
@@ -10,7 +10,8 @@
   "devDependencies": {
     "prettier": "^3.2.5",
     "turbo": "^2.2.3",
-    "typescript": "5.5.4"
+    "typescript": "5.5.4",
+    "@dumpanddone/typescript-config": "workspace:*"
   },
   "packageManager": "pnpm@8.15.6",
   "engines": {

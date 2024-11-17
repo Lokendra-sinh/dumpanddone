@@ -1,0 +1,8 @@
+{
+  "extends": "@dumpanddone/typescript-config",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "./dist",
+    "rootDir": "."
+  }
+}

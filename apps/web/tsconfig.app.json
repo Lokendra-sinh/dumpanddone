@@ -6,6 +6,8 @@
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
+    "composite": true,
+  
 
     /* Bundler mode */
     "moduleResolution": "Bundler",
@@ -20,7 +22,25 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    // "noUncheckedSideEffectImports": true,
+
+    /* Paths */
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@dumpanddone/ui": ["../../packages/ui"],
+      "@dumpanddone/server": ["../server"],
+      "@dumpanddone/types": ["../../packages/types/src"]
+    }
   },
+  "references": [
+    {
+      "path": "../server"
+    },
+    {
+      "path": "../../packages/types"
+    }
+  ],
   "include": ["src"]
 }

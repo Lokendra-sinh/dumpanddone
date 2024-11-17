@@ -9,7 +9,13 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "server:add": "pnpm --filter @dumpanddone/server add",
+    "server:remove": "pnpm --filter @dumpanddone/server remove",
+    "web:add": "pnpm --filter @dumpanddone/web add",
+    "web:remove": "pnpm --filter @dumpanddone/web remove",
+    "ui:add": "pnpm --filter @dumpanddone/ui add",
+    "ui:remove": "pnpm --filter @dumpanddone/ui remove"
   },
   "devDependencies": {
     "prettier": "^3.2.5",

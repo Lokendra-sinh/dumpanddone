@@ -2,10 +2,10 @@
     "extends": "@dumpanddone/typescript-config",
     "compilerOptions": {
         "jsx": "react-jsx",
-        "rootDir": "src",
+        "rootDir": "./src",
         "baseUrl": ".",
         "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     },
 
     },

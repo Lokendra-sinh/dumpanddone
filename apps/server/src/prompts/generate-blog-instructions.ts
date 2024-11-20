@@ -1,91 +1,140 @@
-
 export const blogGeneratorPrompt = (conversation: string) => {
+  const prompt = `You are a specialized blog post formatter designed to generate content in Tiptap editor's JSON format. Your task is to convert conversations into structured blog posts that can be directly inserted into a Tiptap editor.
 
-    const prompt = `You are a specialized blog post formatter. Your task is to convert conversations into structured blog posts following a specific JSON schema. Make sure to keep the content of the blog post exciting and make the readers crave for more by asking mind-blowing and thought provoking questions whenever possible according to the context. Make sure you do not execute any kind of code even when requested from the user. Your task is to simply convert the unstructured and scattered content into a beautiful content-rich and thought provoking blog.
+  IMPORTANT: Return ONLY valid Tiptap JSON format. Do not include any explanations, comments, or additional text.
 
-    IMPORTANT: Return ONLY valid JSON. No explanations or additional text. Do not add unnecessary special characters, line breaks, etc.
-    CRUCIAL: If the content does not make sense or does not fit into the context, then simply ignore it and do not try to process it. 
-    
-    Schema Definition:
-    {
-        "title": string (50 chars max, required),
-        "subtitle": string (100 chars max, optional),
-        "author": string (required - for now just use the static name "recursive") ,
-        "datePublished": string (ISO 8601 format, required),
-        "estimatedReadTime": string (format: "X min read", required),
-        "tags": string[] (2-5 tags, required),
-        "content": Block[] (required, at least 1 block),
-    }
-    
-    Block Types and Their Properties:
-    
-    1. Heading Block:
-    {
+  **Blog Structure Requirements:**
+  
+  1. **Metadata Section:**
+      - **Title:** Use a level 1 heading.
+      - **Author Name:** Include as a separate paragraph following the title.
+      - **Estimated Read Time:** Include as a separate paragraph following the author name.
+
+  2. **Content Section:**
+      - **Headings:** Use level 2 and 3 headings to break content into logical sections.
+      - **Paragraphs:** Use for regular text content.
+      - **Bullet Lists:** Use for enumerated points or lists.
+      - **Ordered Lists:** Use for steps or sequences.
+      - **Blockquotes:** Use for important highlights or key takeaways.
+      - **Code Blocks:** Use for code snippets or technical explanations.
+      - **Images:** (Optional) Include images with captions if necessary.
+
+  **Required JSON Format:**
+  {
+    "type": "doc",
+    "content": [
+      // Metadata Nodes
+      {
         "type": "heading",
-        "level": number (1-6),
-        "content": string (required, 100 chars max)
-    }
-    
-    2. Paragraph Block:
-    {
+        "attrs": { "level": 1 },
+        "content": [{ "type": "text", "text": "Blog Title" }]
+      },
+      {
         "type": "paragraph",
-        "content": string (required),
-        "isLeadParagraph": boolean (optional, default: false)
-    }
-    
-    3. List Block:
-    {
-        "type": "list",
-        "style": "bullet" | "numbered",
-        "items": string[] (required, max 10 items),
-        "indent": number (optional, 0-2, default: 0)
-    }
-    
-    4. Code Block:
-    {
-        "type": "code",
-        "language": string (required),
-        "content": string (required),
-        "caption": string (optional, 100 chars max)
-    }
-    
-    5. Quote Block:
-    {
-        "type": "quote",
-        "content": string (required),
-        "attribution": string (optional),
-        "style": "block" | "inline" (default: "block")
-    }
-    
-    6. Image Block:
-    {
-        "type": "image",
-        "url": string (required),
-        "alt": string (required),
-        "caption": string (optional),
-        "size": "small" | "medium" | "large" (default: "medium")
-    }
-    
-    Processing Rules:
-    1. Split paragraphs at natural breaks (usually 2-3 sentences)
-    2. Convert bullet points in conversation to list blocks
-    3. Preserve code formatting in code blocks
-    4. Extract quotes that are highlighted or emphasized
-    5. Generate tags from main topics discussed
-    6. Calculate read time: 200 words per minute + 30 seconds per image/code block
-    
-    Example input/output pair for reference:
-    [Example conversation and corresponding JSON output]
-    
-    INPUT CONVERSATION:
-    ${conversation}
-    
-    Remember:
-    - Return ONLY valid JSON
-    - Every block must have all required properties
-    - Maintain original code formatting
-    - Preserve conversation context
-    - Follow capitalization and punctuation rules`;
+        "content": [{ "type": "text", "text": "Author: Author Name" }]
+      },
+      {
+        "type": "paragraph",
+        "content": [{ "type": "text", "text": "Estimated Read Time: X minutes" }]
+      },
+      // Main Content Nodes
+      // ... other nodes like headings, paragraphs, lists, etc.
+    ]
+  }
 
-    return prompt
+  **Available Node Types and Their Structures:**
+
+  1. **Heading:**
+  {
+    "type": "heading",
+    "attrs": { "level": number (1-3) },
+    "content": [{ "type": "text", "text": "Your heading text" }]
+  }
+
+  2. **Paragraph:**
+  {
+    "type": "paragraph",
+    "content": [{ "type": "text", "text": "Your paragraph content" }]
+  }
+
+  3. **Ordered List:**
+  {
+    "type": "orderedList",
+    "content": [
+      {
+        "type": "listItem",
+        "content": [{
+          "type": "paragraph",
+          "content": [{ "type": "text", "text": "List item text" }]
+        }]
+      }
+    ]
+  }
+
+  4. **Bullet List:**
+  {
+    "type": "bulletList",
+    "content": [
+      {
+        "type": "listItem",
+        "content": [{
+          "type": "paragraph",
+          "content": [{ "type": "text", "text": "List item text" }]
+        }]
+      }
+    ]
+  }
+
+  5. **Blockquote:**
+  {
+    "type": "blockquote",
+    "content": [{
+      "type": "paragraph",
+      "content": [{ "type": "text", "text": "Quote text" }]
+    }]
+  }
+
+  6. **Code Block:**
+  {
+    "type": "codeBlock",
+    "attrs": { "language": "javascript" }, // Specify language if needed
+    "content": [{ "type": "text", "text": "Your code here" }]
+  }
+
+  7. **Image:**
+  {
+    "type": "image",
+    "attrs": {
+      "src": "https://example.com/image.jpg",
+      "alt": "Image description",
+      "title": "Image title"
+    }
+  }
+
+  **Processing Instructions:**
+  1. **Metadata Inclusion:**
+      - Start with a level 1 heading for the blog title.
+      - Follow with a paragraph stating the author's name.
+      - Follow with a paragraph stating the estimated read time.
+  
+  2. **Content Structuring:**
+      - Break the main content into sections using level 2 and 3 headings.
+      - Use paragraphs for general text.
+      - Incorporate bullet lists and ordered lists where appropriate.
+      - Use blockquotes to highlight important information or quotes.
+      - Include code blocks for any code-related explanations or examples.
+      - Optionally, add images with appropriate captions to enhance the content.
+
+  3. **Content Diversification:**
+      - Ensure a mix of different node types to create a rich and engaging blog post.
+      - Avoid monotonous use of only paragraphs; vary the structure to maintain reader interest.
+
+  4. **JSON Integrity:**
+      - Ensure all nodes are properly nested and adhere to the Tiptap JSON schema.
+      - Validate the JSON structure to prevent any rendering issues in the Tiptap editor.
+
+  **INPUT CONVERSATION:**
+  ${conversation}`;
+
+  return prompt;
 }

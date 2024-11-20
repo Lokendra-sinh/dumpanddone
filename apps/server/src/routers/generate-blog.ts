@@ -3,6 +3,8 @@ import { TRPCError } from "@trpc/server";
 import z from "zod";
 import { generateBlogContent } from "../models/claude"
 import { generatedBlogSchema } from "../types/blog";
+import { db } from "../db";
+import { users } from "../db/schema";
 
 
 const GenerateBlogInputSchema = z.object({
@@ -40,11 +42,16 @@ export const generateBlog = publicProcedure
     try {
         console.log("Generating blog data");
         const response = await generateBlogContent(content);
+        console.log("RESPONSE is", response)
+        await db.insert(users).values({
+            content: response
+        }).returning()
         return {
             status: 'success',
             data: response
         };
     } catch (error) {
+        console.log("ERROR is", error);
         // Instead of returning error, throw TRPCError
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',

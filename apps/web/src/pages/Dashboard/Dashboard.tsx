@@ -29,6 +29,7 @@ export function Dashboard() {
 
   const generateBlogMutation = trpc.generateBlog.useMutation({
     onSuccess: (res) => {
+      console.log("res is", res)
       const parsedData = JSON.parse(res.data!);
       setBlogData(parsedData);
     },

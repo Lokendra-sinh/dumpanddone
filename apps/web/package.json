@@ -24,6 +24,7 @@
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-toolbar": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.3",
+    "@react-oauth/google": "^0.12.1",
     "@tanstack/react-query": "^4.36.1",
     "@tanstack/react-router": "^1.81.0",
     "@tanstack/router-devtools": "^1.81.0",

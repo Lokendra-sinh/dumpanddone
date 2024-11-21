@@ -3,6 +3,7 @@ import { Dashboard } from "../pages/Dashboard/Dashboard";
 import LandingPage from "../pages/Landing/LandingPage";
 import { ThemeProvider } from "../providers/theme-provider";
 import { DashboardProvider } from "../providers/dashboard-provider";
+import { Login } from "../pages/Login"
 
 
 export const RootRoute = createRootRoute({
@@ -30,6 +31,13 @@ export const IndexRoute = createRoute({
     }
   }
 });
+
+export const LoginRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/login",
+  component: Login,
+
+})
 
 export const DashboardRoute = createRoute({
   getParentRoute: () => RootRoute,

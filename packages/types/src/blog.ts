@@ -95,7 +95,7 @@ interface Mark {
 
 
 
-export type {
+export {
   TiptapDocument,
   ParagraphNode,
   HardBreakNode,

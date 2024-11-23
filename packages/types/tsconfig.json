@@ -6,7 +6,12 @@
     "strict": true,
     "declaration": true,
     "declarationMap": true,
-    "composite": true
+    "composite": true,
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "*": ["src/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "./dist"]

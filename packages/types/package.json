@@ -4,10 +4,10 @@
   "description": "",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "files": ["src/**/*"],
   "scripts": {
     "dev": "tsx --watch src/index.ts",
-    "build": "pnpm run clean && tsc",
+    "build": "tsc",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf ./dist",
     "clear-cache": "pnpm run clean"

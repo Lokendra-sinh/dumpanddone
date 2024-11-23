@@ -46,7 +46,7 @@ export function Dashboard() {
 
   return (
     <SidebarProvider className="">
-      <AppSidebar className="bg-background text-foreground" />
+      <AppSidebar className="bg-background text-foregroun" />
       <SidebarInset className="max-h-screen overflow-auto">
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 justify-between">
           <div className="flex items-center">

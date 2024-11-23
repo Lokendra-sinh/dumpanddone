@@ -15,8 +15,10 @@
   "license": "ISC",
   "devDependencies": {
     "@dumpanddone/types": "workspace:*",
+    "@types/cookie-parser": "^1.4.7",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/server": "^1.0.11",
     "drizzle-kit": "^0.28.1",
     "tsx": "^4.19.2",
@@ -25,10 +27,12 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
     "@trpc/server": "^10.45.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.36.3",
     "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
     "postgres": "^3.4.5",
     "uuid": "^11.0.3",
     "zod": "^3.23.8"

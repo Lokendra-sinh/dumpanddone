@@ -4,6 +4,7 @@ import LandingPage from "../pages/Landing/LandingPage";
 import { ThemeProvider } from "../providers/theme-provider";
 import { DashboardProvider } from "../providers/dashboard-provider";
 import { Login } from "../pages/Login"
+import { Register } from '../pages/Register'
 
 
 export const RootRoute = createRootRoute({
@@ -37,6 +38,12 @@ export const LoginRoute = createRoute({
   path: "/login",
   component: Login,
 
+})
+
+export const RegisterRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/register",
+  component: Register
 })
 
 export const DashboardRoute = createRoute({

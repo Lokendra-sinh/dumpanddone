@@ -1,10 +1,11 @@
-import { publicProcedure } from "../trpc/initTRPC";
+import { protectedProcedure, publicProcedure } from "../trpc/initTRPC";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
 import { generateBlogContent } from "../models/claude"
 import { generatedBlogSchema } from "../types/blog";
 import { db } from "../db";
 import { users } from "../db/schema";
+// import { addBlog } from "../db/queries/addBlog";
 
 
 const GenerateBlogInputSchema = z.object({
@@ -28,9 +29,9 @@ export const GeneratedBlogResponseSchema = z.discriminatedUnion('status', [
 ]);
 
 
-export const generateBlog = publicProcedure
+export const generateBlog = protectedProcedure
   .input(GenerateBlogInputSchema)
-  .mutation(async ({ input }) => {
+  .mutation(async ({ ctx, input }) => {
     const { content } = input;
     if(!content){
         throw new TRPCError({
@@ -41,14 +42,20 @@ export const generateBlog = publicProcedure
 
     try {
         console.log("Generating blog data");
-        const response = await generateBlogContent(content);
-        console.log("RESPONSE is", response)
-        await db.insert(users).values({
-            content: response
-        }).returning()
+        const blogData = await generateBlogContent(content);
+        console.log("RESPONSE is", blogData)
+
+        // const blogDb = await addBlog({
+        //     userId: ctx.user.id,
+        //     last_updated: Date.now(),
+        //     content: blogData,
+        // })
+        // await db.insert(users).values({
+        //     content: blogData
+        // }).returning()
         return {
             status: 'success',
-            data: response
+            data: blogData
         };
     } catch (error) {
         console.log("ERROR is", error);

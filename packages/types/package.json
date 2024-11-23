@@ -7,8 +7,10 @@
   "files": ["dist"],
   "scripts": {
     "dev": "tsx --watch src/index.ts",
-    "build": "tsc",
-    "type-check": "tsc --noEmit"
+    "build": "pnpm run clean && tsc",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf ./dist",
+    "clear-cache": "pnpm run clean"
   },
   "keywords": [],
   "author": "",

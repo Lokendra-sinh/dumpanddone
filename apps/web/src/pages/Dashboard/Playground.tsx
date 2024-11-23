@@ -122,6 +122,8 @@ const dummyContent = {
 export const Playground = () => {
   const { blogData } = useDashboard();
 
+  console.log("BLOG DATA is", blogData);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({

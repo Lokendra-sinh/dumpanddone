@@ -6,9 +6,10 @@ const MAX_STARS = 50
 
 interface TwinkleStarsProps {
     children: ReactNode,
+    className?: string
 }
 
-export const TwinkleStars = ({children}: TwinkleStarsProps) => {
+export const TwinkleStars = ({children, className}: TwinkleStarsProps) => {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const starsRef = useRef<Star[]>([])
     const animationFrameRef = useRef<number>()
@@ -77,7 +78,7 @@ export const TwinkleStars = ({children}: TwinkleStarsProps) => {
 
     })
   return (
-    <div className="w-fit flex relative rounded-md overflow-hidden">
+    <div className={`w-full flex rounded-md overflow-hidden ${className}`}>
             <canvas 
                 ref={canvasRef} 
                 className="absolute inset-0 w-full h-full"

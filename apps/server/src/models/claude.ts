@@ -25,7 +25,7 @@ export async function generateBlogContent(conversation: string) {
         const content = message.content[0];
   
         if (content.type === "text") {
-          const parsedContent = content.text;
+          const parsedContent = JSON.parse(content.text);
           console.log("PARSED Content is", parsedContent);
           return parsedContent;
         } else {

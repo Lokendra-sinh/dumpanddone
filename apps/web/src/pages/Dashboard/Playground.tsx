@@ -13,111 +13,111 @@ const lowlight = createLowlight(all)
 
 
 // Enhanced dummy content with various elements
-const dummyContent = {
-  type: 'doc',
-  content: [
-    {
-      type: 'heading',
-      attrs: { 
-        level: 1,
-        textAlign: 'center'
-      },
-      content: [{ type: 'text', text: 'Rich Text Editor Example' }]
-    },
-    {
-      type: 'paragraph',
-      attrs: { textAlign: 'center' },
-      content: [
-        { 
-          type: 'text', 
-          marks: [{ type: 'italic' }],
-          text: 'A comprehensive example with various text formatting options' 
-        }
-      ]
-    },
-    {
-      type: 'heading',
-      attrs: { level: 2 },
-      content: [{ type: 'text', text: '1. Ordered Lists' }]
-    },
-    {
-      type: 'orderedList',
-      content: [
-        {
-          type: 'listItem',
-          content: [{
-            type: 'paragraph',
-            content: [
-              { type: 'text', text: 'Main point one ' },
-              { 
-                type: 'text',
-                marks: [{ type: 'bold' }], 
-                text: 'with bold text' 
-              }
-            ]
-          }]
-        },
-        {
-          type: 'listItem',
-          content: [{
-            type: 'paragraph',
-            content: [
-              { type: 'text', text: 'Main point two ' },
-              { 
-                type: 'text',
-                marks: [{ type: 'italic' }],
-                text: 'with italic text' 
-              }
-            ]
-          }]
-        }
-      ]
-    },
-    {
-      type: 'heading',
-      attrs: { level: 2 },
-      content: [{ type: 'text', text: '2. Task List' }]
-    },
-    {
-      type: 'taskList',
-      content: [
-        {
-          type: 'taskItem',
-          attrs: { checked: true },
-          content: [{ type: 'text', text: 'Completed task' }]
-        },
-        {
-          type: 'taskItem',
-          attrs: { checked: false },
-          content: [{ type: 'text', text: 'Pending task' }]
-        }
-      ]
-    },
-    {
-      type: 'heading',
-      attrs: { level: 2 },
-      content: [{ type: 'text', text: '3. Code Block' }]
-    },
-    {
-      type: 'codeBlock',
-      attrs: { language: 'javascript' },
-      content: [{
-        type: 'text',
-        text: 'const greeting = "Hello, World!";\nconsole.log(greeting);'
-      }]
-    },
-    {
-      type: 'blockquote',
-      content: [{
-        type: 'paragraph',
-        content: [{ 
-          type: 'text',
-          text: 'This is a blockquote with proper styling and spacing' 
-        }]
-      }]
-    }
-  ]
-};
+// const dummyContent = {
+//   type: 'doc',
+//   content: [
+//     {
+//       type: 'heading',
+//       attrs: { 
+//         level: 1,
+//         textAlign: 'center'
+//       },
+//       content: [{ type: 'text', text: 'Rich Text Editor Example' }]
+//     },
+//     {
+//       type: 'paragraph',
+//       attrs: { textAlign: 'center' },
+//       content: [
+//         { 
+//           type: 'text', 
+//           marks: [{ type: 'italic' }],
+//           text: 'A comprehensive example with various text formatting options' 
+//         }
+//       ]
+//     },
+//     {
+//       type: 'heading',
+//       attrs: { level: 2 },
+//       content: [{ type: 'text', text: '1. Ordered Lists' }]
+//     },
+//     {
+//       type: 'orderedList',
+//       content: [
+//         {
+//           type: 'listItem',
+//           content: [{
+//             type: 'paragraph',
+//             content: [
+//               { type: 'text', text: 'Main point one ' },
+//               { 
+//                 type: 'text',
+//                 marks: [{ type: 'bold' }], 
+//                 text: 'with bold text' 
+//               }
+//             ]
+//           }]
+//         },
+//         {
+//           type: 'listItem',
+//           content: [{
+//             type: 'paragraph',
+//             content: [
+//               { type: 'text', text: 'Main point two ' },
+//               { 
+//                 type: 'text',
+//                 marks: [{ type: 'italic' }],
+//                 text: 'with italic text' 
+//               }
+//             ]
+//           }]
+//         }
+//       ]
+//     },
+//     {
+//       type: 'heading',
+//       attrs: { level: 2 },
+//       content: [{ type: 'text', text: '2. Task List' }]
+//     },
+//     {
+//       type: 'taskList',
+//       content: [
+//         {
+//           type: 'taskItem',
+//           attrs: { checked: true },
+//           content: [{ type: 'text', text: 'Completed task' }]
+//         },
+//         {
+//           type: 'taskItem',
+//           attrs: { checked: false },
+//           content: [{ type: 'text', text: 'Pending task' }]
+//         }
+//       ]
+//     },
+//     {
+//       type: 'heading',
+//       attrs: { level: 2 },
+//       content: [{ type: 'text', text: '3. Code Block' }]
+//     },
+//     {
+//       type: 'codeBlock',
+//       attrs: { language: 'javascript' },
+//       content: [{
+//         type: 'text',
+//         text: 'const greeting = "Hello, World!";\nconsole.log(greeting);'
+//       }]
+//     },
+//     {
+//       type: 'blockquote',
+//       content: [{
+//         type: 'paragraph',
+//         content: [{ 
+//           type: 'text',
+//           text: 'This is a blockquote with proper styling and spacing' 
+//         }]
+//       }]
+//     }
+//   ]
+// };
 
 export const Playground = () => {
   const { blogData } = useDashboard();
@@ -137,7 +137,7 @@ export const Playground = () => {
         heading: {
           levels: [1, 2, 3],
           HTMLAttributes: {
-            class: "font-medium my-6",
+            class: "font-medium my-6 text-2xl",
           }
         },
         // Blockquote configuration
@@ -196,7 +196,7 @@ export const Playground = () => {
         },
       }),
     ],
-    content: dummyContent,
+    content: blogData,
     onUpdate: ({ editor }) => {
       console.log('Current HTML:', editor.getHTML());
       console.log('Current JSON:', editor.getJSON());

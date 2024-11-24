@@ -14,7 +14,13 @@ const GOOGLE_CLIENT_AUTH_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "http://localhost:4000/trpc"
+      url: "http://localhost:4000/trpc",
+      fetch(url, options) {
+        return fetch(url, {
+          ...options,
+          credentials: 'include',
+        });
+      },
     })
   ]
 })

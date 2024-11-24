@@ -53,6 +53,7 @@ export const googleLogin = authProcedure
         throw new Error("User does not exist")
       }
     } catch (e) {
+      console.log("Creating NEW user");
       try {
         user = await addUser({
           name: userData.name,
@@ -73,6 +74,7 @@ export const googleLogin = authProcedure
     try {
       const sessionToken = generateJwtToken(user.id);
       ctx.res.cookie("authToken", sessionToken, COOKIE_CONFIG);
+      console.log("returning the user");
       return {
         user: {
           name: user.name,

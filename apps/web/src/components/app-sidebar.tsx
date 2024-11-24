@@ -65,10 +65,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   </svg>
   <span className="text-xl font-bold text-foreground">dumpanddone</span>
 </div>
-      <SidebarContent className="bg-background">
+      <SidebarContent className="bg-background py-4">
         {/* We create a SidebarGroup for each parent. */}
         {data.navMain.map((item) => (
-          <SidebarGroup key={item.title}>
+          <SidebarGroup className="my-0 py-0" key={item.title}>
              <SidebarGroupContent>
               <SidebarMenu>
                   <SidebarMenuItem key={item.title}>

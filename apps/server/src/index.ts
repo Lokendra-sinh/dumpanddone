@@ -23,9 +23,12 @@ const appRouter = router({
 })
 
 const app = express()
-app.use(cors())
-app.use(express.json())
 app.use(cookieParser())
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}))
+app.use(express.json())
 
 app.use(
     '/trpc',
@@ -34,6 +37,8 @@ app.use(
         createContext: async ({req, res}): Promise<BaseContext & Partial<AuthContext>> => {
 
           const token = req.cookies.authToken
+
+          console.log("TOKEN init is", req);
 
           const baseContextWithRes = {
             userId: undefined,

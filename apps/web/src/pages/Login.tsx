@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import * as React from "react";
 import { Formik, Form, Field } from "formik";
 import * as z from "zod";
@@ -31,11 +31,15 @@ const validate = (values: LoginFormData) => {
 };
 
 export function Login() {
+  const navigate = useNavigate()
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
   const googleLoginMutation = trpc.googleLogin.useMutation({
     onSuccess: (res) => {
       console.log("Res after login is", res)
+      navigate({
+        to: "/dashboard"
+      })
     },
     onError: (e) => {
       console.error("Error while logging in", e)

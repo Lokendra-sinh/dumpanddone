@@ -30,7 +30,7 @@ export function Dashboard() {
   const generateBlogMutation = trpc.generateBlog.useMutation({
     onSuccess: (res) => {
       console.log("res is", res)
-      const parsedData = JSON.parse(res.data!);
+      const parsedData = (res.data!);
       setBlogData(parsedData);
     },
   });
@@ -59,7 +59,8 @@ export function Dashboard() {
         <div className="flex flex-1 flex-col gap-4 p-4">
           <div className="w-full flex-1 p-6 overflow-auto">
             <Tabs defaultValue="upload">
-              <TabsList className="mb-4">
+             <div className="w-full flex items-center justify-between">
+             <TabsList className="">
                 <TabsTrigger value="upload">
                   <Upload className="mr-2 h-4 w-4" />
                   Upload
@@ -73,6 +74,17 @@ export function Dashboard() {
                   Playground
                 </TabsTrigger>
               </TabsList>
+              <div className="flex-1 flex justify-end space-x-4">
+              <Button variant="outline" className="bg-background text-foreground">
+                <FileDown className="mr-2 h-4 w-4" />
+                Export as HTML
+              </Button>
+              <Button variant="outline" className="bg-background text-foreground">
+                <FileDown className="mr-2 h-4 w-4" />
+                Export as PDF
+              </Button>
+            </div>
+             </div>
 
               <TabsContent value="upload">
                 <Card>
@@ -112,7 +124,7 @@ export function Dashboard() {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="playground">
+              <TabsContent className="overflow-auto" value="playground">
                 <Card>
                   <CardHeader>
                     <CardTitle>Playground</CardTitle>
@@ -127,16 +139,6 @@ export function Dashboard() {
               </TabsContent>
             </Tabs>
 
-            <div className="mt-6 flex justify-end space-x-4">
-              <Button variant="outline" className="bg-background text-foreground">
-                <FileDown className="mr-2 h-4 w-4" />
-                Export as HTML
-              </Button>
-              <Button variant="outline" className="bg-background text-foreground">
-                <FileDown className="mr-2 h-4 w-4" />
-                Export as PDF
-              </Button>
-            </div>
           </div>
         </div>
       </SidebarInset>

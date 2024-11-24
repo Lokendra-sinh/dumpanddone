@@ -6,7 +6,8 @@ import { Breadcrumb,
 
 export const DumpanddoneBreadcrumb = () => {
     const matches = useMatches()
-    const routes = matches.filter((m) => ({name: m.context.title, url: m.pathname}))
+    console.log("maches are", matches)
+    const routes = matches.filter((m) => m.id !== "/auth-route" && ({name: m.context.title, url: m.pathname}))
     return (
         <Breadcrumb>
         <BreadcrumbList>

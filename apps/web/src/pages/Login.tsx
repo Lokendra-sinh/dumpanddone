@@ -4,6 +4,7 @@ import { Formik, Form, Field } from "formik";
 import * as z from "zod";
 import { useGoogleLogin } from "@react-oauth/google";
 import { trpc } from "@/utils/trpc";
+import { useUserStore } from "@/store/useUserStore";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -31,12 +32,13 @@ const validate = (values: LoginFormData) => {
 };
 
 export function Login() {
+  const setUser = useUserStore((state) => state.setUser)
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
   const googleLoginMutation = trpc.googleLogin.useMutation({
     onSuccess: (res) => {
-      console.log("Res after login is", res)
+      setUser(res.user)
       navigate({
         to: "/dashboard"
       })

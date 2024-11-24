@@ -1,17 +1,30 @@
 import { createRouter } from "@tanstack/react-router";
-import { RootRoute, IndexRoute, DashboardRoute, LoginRoute, RegisterRoute } from "./routes/routes";
+import {
+  RootRoute,
+  IndexRoute,
+  DashboardRoute,
+  LoginRoute,
+  RegisterRoute,
+} from "./routes/routes";
+import { AuthRoute } from "./routes/authenticated-route";
+
+const AuthenticatedRoutes = [DashboardRoute];
+
+const NonAuthenticatedRoutes = [
+  IndexRoute,
+  LoginRoute,
+  RegisterRoute,
+];
 
 const routeTree = RootRoute.addChildren([
-IndexRoute,
-LoginRoute,
-RegisterRoute,
-DashboardRoute
-])
+  ...NonAuthenticatedRoutes,
+  AuthRoute.addChildren([...AuthenticatedRoutes]),
+]);
 
-export const router = createRouter({routeTree})
+export const router = createRouter({ routeTree });
 
-declare module '@tanstack/react-router' {
-    interface Register{
-        router: typeof router
-    }
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
 }

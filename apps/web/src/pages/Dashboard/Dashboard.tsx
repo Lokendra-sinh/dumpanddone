@@ -22,6 +22,7 @@ import { useDashboard } from "../../providers/dashboard-provider";
 import { ModeToggle } from "../../components/toggle-mode"
 
 export function Dashboard() {
+  console.log("inside dashboard");
   const { blogData, setBlogData } = useDashboard();
   console.log("blogDATA from dashboar sis", blogData);
   const [content, setContent] = useState<string>("");

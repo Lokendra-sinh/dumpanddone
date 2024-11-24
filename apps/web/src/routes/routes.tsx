@@ -5,6 +5,8 @@ import { ThemeProvider } from "../providers/theme-provider";
 import { DashboardProvider } from "../providers/dashboard-provider";
 import { Login } from "../pages/Login"
 import { Register } from '../pages/Register'
+import { Toaster } from '@dumpanddone/ui'
+import { AuthRoute } from "./authenticated-route";
 
 
 export const RootRoute = createRootRoute({
@@ -12,6 +14,7 @@ export const RootRoute = createRootRoute({
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <div className="w-screen min-h-screen bg-black text-white relative overflow-hidden flex flex-col items-center">
         <Outlet />
+        <Toaster />
       </div>
     </ThemeProvider>
   ),
@@ -47,7 +50,7 @@ export const RegisterRoute = createRoute({
 })
 
 export const DashboardRoute = createRoute({
-  getParentRoute: () => RootRoute,
+  getParentRoute: () => AuthRoute,
   path: "/dashboard",
   component: () => {
     return (
@@ -57,6 +60,7 @@ export const DashboardRoute = createRoute({
     )
   },
   beforeLoad: () => {
+
     return {
       title: "Dashboard"
     }

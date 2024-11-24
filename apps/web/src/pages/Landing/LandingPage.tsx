@@ -1,17 +1,21 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { HeroDash } from "./Hero-Dash";
 import { ConnectingThreads } from "./Connecting-Threads";
 import { What } from "./what";
+import { useUserStore } from "@/store/useUserStore";
+import { useToast} from '@dumpanddone/ui'
 
 const LandingPage = () => {
+  const { toast } = useToast()
+  const isLoggedIn = useUserStore((state) => state.user !== null);
+  const clearUser = useUserStore((state) => state.clearUser);
   const pathRef = useRef<SVGPathElement>(null);
   const circleRef = useRef<SVGCircleElement>(null);
   const buttonRef = useRef<HTMLDivElement>(null);
   const dashboardRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const [position, setPosition] = useState(0);
-
 
   useEffect(() => {
     const path = pathRef.current;
@@ -38,8 +42,8 @@ const LandingPage = () => {
       <div className="absolute top-[100px] left-1/2 -translate-x-1/2 h-1 bg-transparent shadow-[20px_80px_300px_150px] shadow-purple-800" />
 
       {/* vertical strokes */}
-<div className="mx-10">
-      <PathAnimation />
+      <div className="mx-10">
+        <PathAnimation />
       </div>
 
       <nav className="relative z-10 container w-[1200px] px-6 py-2 flex items-center justify-between backdrop-blur-lg shadow-[inset_0px_0px_1px_1px_#0000] shadow-white/10 rounded-lg my-2">
@@ -78,19 +82,28 @@ const LandingPage = () => {
             dumpanddone
           </span>
         </div>
-       <div className="flex items-center gap-4">
-       <button
-          className="rounded-lg font-medium hover:bg-none text-sm"
-          onClick={() => navigate({
-            to: "/login",
-          })}
-        >
-          Login
-        </button>
-        <button className="px-2 py-1 rounded-md text-sm border bg-transparent text-white border-purple-800 shadow-[inset_0_-4px_12px_0] shadow-purple-950 hover:bg-purple-800 transition-background duration-100 ease-in-out">
-          Join waitlist
-        </button>
-       </div>
+        <div className="flex items-center gap-4">
+          <button
+            className="rounded-lg font-medium hover:bg-none text-sm"
+            onClick={() => {
+              if (isLoggedIn) {
+                clearUser();
+                toast({
+                  title: "You logged out!",
+                })
+              } else {
+                navigate({
+                  to: "/login",
+                });
+              }
+            }}
+          >
+            {isLoggedIn ? "Logout" : "Login"}
+          </button>
+          <button className="px-2 py-1 rounded-md text-sm border bg-transparent text-white border-purple-800 shadow-[inset_0_-4px_12px_0] shadow-purple-950 hover:bg-purple-800 transition-background duration-100 ease-in-out">
+            Join waitlist
+          </button>
+        </div>
         {/* <TwinkleStars className="absolute top-0 left-0 w-full">
         <div className="w-screen h-10">
         </div>
@@ -98,7 +111,6 @@ const LandingPage = () => {
       </nav>
 
       <main className="w-full relative z-10 container pt-32 pb-24 text-center">
-
         <h1 className="text-6xl font-inter font-bold mb-6">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-white ">
             Turn your scattered ideas
@@ -122,28 +134,29 @@ const LandingPage = () => {
           ready to captivate your audience.
         </p>
 
-        <div ref={buttonRef} className="w-full flex items-center justify-center mb-32">
-          <Link
-            to="/dashboard"
+        <div
+          ref={buttonRef}
+          onClick={() => navigate({
+            to: "/dashboard"
+          })}
+          className="w-full flex items-center justify-center mb-32"
+        >
+          <div
             className="inline-block p-[2px] bg-gradient-to-t from-purple-900 to-purple-600 rounded-[6px] shadow-inner"
           >
             {/* <TwinkleStars className="relative"> */}
-              <span className="hover:none outline-none border-none inline-flex items-center shadow-[0px_0px_10px_1px_#a855f7] px-3 py-1 text-sm font-medium rounded-md bg-purple-950 text-white bg-gradient-to-t from-purple-950 to-purple-500">
-                Create your first blog
-              </span>
+            <span className="hover:none outline-none border-none inline-flex items-center shadow-[0px_0px_10px_1px_#a855f7] px-3 py-1 text-sm font-medium rounded-md bg-purple-950 text-white bg-gradient-to-t from-purple-950 to-purple-500">
+              Create your first blog
+            </span>
             {/* </TwinkleStars> */}
-          </Link>
+          </div>
         </div>
 
-
-      <HeroDash ref={dashboardRef} />
-      <div className="absolute bottom-0 left-0 right-0 w-full h-[600px] bg-gradient-to-t from-black to-transparent"></div>
+        <HeroDash ref={dashboardRef} />
+        <div className="absolute bottom-0 left-0 right-0 w-full h-[600px] bg-gradient-to-t from-black to-transparent"></div>
       </main>
 
-      <ConnectingThreads 
-        buttonRef={buttonRef}
-        dashboardRef={dashboardRef}
-      />
+      <ConnectingThreads buttonRef={buttonRef} dashboardRef={dashboardRef} />
 
       <svg
         width="100%"
@@ -244,65 +257,63 @@ const PathAnimation = () => {
   };
 
   return (
+    <svg className="px-6 absolute top-0 left-0 w-full h-full">
+      <defs>
+        <linearGradient
+          id="pathGradient1"
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="0%"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" stopColor="#170326" stopOpacity="0.1" />
+          <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#6d28d9" stopOpacity="0.1" />
+        </linearGradient>
 
-      <svg className="px-6 absolute top-0 left-0 w-full h-full">
-        <defs>
-          <linearGradient
-            id="pathGradient1"
-            x1="0%"
-            y1="0%"
-            x2="100%"
-            y2="0%"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop offset="0%" stopColor="#170326" stopOpacity="0.1" />
-            <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#6d28d9" stopOpacity="0.1" />
-          </linearGradient>
+        {/* Gradient for second path */}
+        <linearGradient
+          id="pathGradient2"
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="0%"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.1" />
+          <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#6d28d9" stopOpacity="0.1" />
+        </linearGradient>
+      </defs>
+      {/* Render all paths */}
+      {paths.map((path) => (
+        <path
+          key={path.id}
+          ref={(el) => setPathRef(el, path.id)}
+          d={path.d}
+          stroke="url(#pathGradient1)"
+          fill="none"
+          strokeWidth="1"
+        />
+      ))}
 
-          {/* Gradient for second path */}
-          <linearGradient
-            id="pathGradient2"
-            x1="0%"
-            y1="0%"
-            x2="100%"
-            y2="0%"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.1" />
-            <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#6d28d9" stopOpacity="0.1" />
-          </linearGradient>
-        </defs>
-        {/* Render all paths */}
-        {paths.map((path) => (
-          <path
-            key={path.id}
-            ref={(el) => setPathRef(el, path.id)}
-            d={path.d}
-            stroke="url(#pathGradient1)"
-            fill="none"
-            strokeWidth="1"
+      {/* Render dots for all paths */}
+      {Object.entries(pathDots).map(([pathId, dots]) =>
+        dots.map((dot, index) => (
+          <circle
+            key={`${pathId}-${index}`}
+            cx={dot.x}
+            cy={dot.y}
+            r="1.5"
+            className="fill-purple-800"
+            style={{
+              opacity: dot.opacity,
+              filter: "blur(0.2px)",
+            }}
           />
-        ))}
-
-        {/* Render dots for all paths */}
-        {Object.entries(pathDots).map(([pathId, dots]) =>
-          dots.map((dot, index) => (
-            <circle
-              key={`${pathId}-${index}`}
-              cx={dot.x}
-              cy={dot.y}
-              r="1.5"
-              className="fill-purple-800"
-              style={{
-                opacity: dot.opacity,
-                filter: "blur(0.2px)",
-              }}
-            />
-          ))
-        )}
-      </svg>
-
+        ))
+      )}
+    </svg>
   );
 };

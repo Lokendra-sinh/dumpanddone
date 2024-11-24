@@ -13,6 +13,26 @@ const LoginSchema = z.object({
   accessToken: z.string(),
 });
 
+const UserSchema = z.object({
+  name: z.string(),
+  email: z.string(),
+  avatar: z.string(),
+  created_at: z.date(),
+  auth_method: z.union([
+    z.literal("google"),
+    z.literal("github"),
+    z.literal("email"),
+  ]),
+});
+
+
+const LoginResponseSchema = z.object({
+  status: z.string(),
+  user: UserSchema,
+});
+
+type LoginResponseSchemaType = z.infer<typeof LoginResponseSchema>;
+
 // Cookie config can be reused
 const COOKIE_CONFIG = {
   httpOnly: true,
@@ -23,7 +43,8 @@ const COOKIE_CONFIG = {
 
 export const googleLogin = authProcedure
   .input(LoginSchema)
-  .mutation(async ({ input, ctx }) => {
+  .output(LoginResponseSchema)
+  .mutation(async ({ input, ctx }): Promise<LoginResponseSchemaType> => {
     const { accessToken } = input;
 
     if (!accessToken) {
@@ -48,9 +69,9 @@ export const googleLogin = authProcedure
     let user;
     try {
       user = await getUserByEmail(userData.email);
-      console.log("USER is", user)
-      if(!user){
-        throw new Error("User does not exist")
+      console.log("USER is", user);
+      if (!user) {
+        throw new Error("User does not exist");
       }
     } catch (e) {
       console.log("Creating NEW user");
@@ -76,13 +97,14 @@ export const googleLogin = authProcedure
       ctx.res.cookie("authToken", sessionToken, COOKIE_CONFIG);
       console.log("returning the user");
       return {
+        status: "success",
         user: {
-          name: user.name,
-          avatar: user.avatar,
+          name: user.name!,
+          avatar: user.avatar!,
           email: user.email,
-          created_at: user.created_at,
-          auth_method: user.auth_method
-        }
+          created_at: user.created_at!,
+          auth_method: user.auth_method,
+        },
       };
     } catch (error) {
       console.error("Session creation failed:", error);

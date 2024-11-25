@@ -25,7 +25,6 @@ const UserSchema = z.object({
   ]),
 });
 
-
 const LoginResponseSchema = z.object({
   status: z.string(),
   user: UserSchema,
@@ -123,7 +122,7 @@ async function verifyGoogleToken(token: string) {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
 
     if (!response.ok) {

@@ -1,83 +1,84 @@
-import express from 'express'
-import cors from 'cors'
-import * as trpcExpress from '@trpc/server/adapters/express'
-import { AuthContext, BaseContext, router } from './trpc/initTRPC'
-import { generateBlog } from './routers/generate-blog'
-import Anthropic from '@anthropic-ai/sdk'
-import dotenv from 'dotenv'
-import { googleLogin } from './routers/user';
-import { verifyJwtToken } from './utils/verify-jwt-token'
-import { generateJwtToken } from './utils/generate-jwt-token'
-import cookieParser from 'cookie-parser'
+import express from "express";
+import cors from "cors";
+import * as trpcExpress from "@trpc/server/adapters/express";
+import { AuthContext, BaseContext, router } from "./trpc/initTRPC";
+import { generateBlog } from "./routers/generate-blog";
+import Anthropic from "@anthropic-ai/sdk";
+import dotenv from "dotenv";
+import { googleLogin } from "./routers/user";
+import { verifyJwtToken } from "./utils/verify-jwt-token";
+import { generateJwtToken } from "./utils/generate-jwt-token";
+import cookieParser from "cookie-parser";
 
-dotenv.config()
+dotenv.config();
 
 export const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-})
-
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
 
 const appRouter = router({
-    generateBlog: generateBlog,
-    googleLogin: googleLogin,
-})
+  generateBlog: generateBlog,
+  googleLogin: googleLogin,
+});
 
-const app = express()
-app.use(cookieParser())
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true
-}))
-app.use(express.json())
+const app = express();
+app.use(cookieParser());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  }),
+);
+app.use(express.json());
 
 app.use(
-    '/trpc',
-    trpcExpress.createExpressMiddleware({
-        router: appRouter,
-        createContext: async ({req, res}): Promise<BaseContext & Partial<AuthContext>> => {
+  "/trpc",
+  trpcExpress.createExpressMiddleware({
+    router: appRouter,
+    createContext: async ({
+      req,
+      res,
+    }): Promise<BaseContext & Partial<AuthContext>> => {
+      const token = req.cookies.authToken;
 
-          const token = req.cookies.authToken
+      console.log("TOKEN init is", req);
 
-          console.log("TOKEN init is", req);
+      const baseContextWithRes = {
+        userId: undefined,
+        res: res,
+      };
+      if (!token) return baseContextWithRes;
 
-          const baseContextWithRes = {
-            userId: undefined,
-            res: res
-          }
-          if(!token) return baseContextWithRes
+      const verification = verifyJwtToken(token);
 
-          const verification = verifyJwtToken(token)
+      if (!verification.decoded) {
+        return baseContextWithRes;
+      }
 
-          if(!verification.decoded){
-            return baseContextWithRes
-          }
+      if (verification.isExpired) {
+        const newSessionToken = generateJwtToken(verification.decoded.id);
+        res.cookie("authToken", newSessionToken, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+        return {
+          userId: verification.decoded.id,
+          res: res,
+        };
+      }
 
-          if(verification.isExpired){
-            const newSessionToken = generateJwtToken(verification.decoded.id)
-            res.cookie('authToken', newSessionToken, {
-              httpOnly: true,
-              secure: true,
-              sameSite: 'strict',
-              maxAge: 7 * 24 * 60 * 60 * 1000
-            })
-            return {
-              userId: verification.decoded.id,
-              res: res,
-            }
-          }
-
-          return {
-            userId: verification.decoded.id,
-            res: res,
-          }
-
-        }
-    })
-)
+      return {
+        userId: verification.decoded.id,
+        res: res,
+      };
+    },
+  }),
+);
 
 app.listen(4000, () => {
-    console.log("Server is listening on port 4000");
-})
+  console.log("Server is listening on port 4000");
+});
 
-
-export type AppRouter = typeof appRouter
+export type AppRouter = typeof appRouter;

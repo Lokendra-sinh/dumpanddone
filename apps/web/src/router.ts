@@ -10,11 +10,7 @@ import { AuthRoute } from "./routes/authenticated-route";
 
 const AuthenticatedRoutes = [DashboardRoute];
 
-const NonAuthenticatedRoutes = [
-  IndexRoute,
-  LoginRoute,
-  RegisterRoute,
-];
+const NonAuthenticatedRoutes = [IndexRoute, LoginRoute, RegisterRoute];
 
 const routeTree = RootRoute.addChildren([
   ...NonAuthenticatedRoutes,

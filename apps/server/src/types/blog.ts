@@ -7,49 +7,46 @@ const headingLevelSchema = z.union([
   z.literal(3),
   z.literal(4),
   z.literal(5),
-  z.literal(6)
-])
+  z.literal(6),
+]);
 
-const listTypeSchema = z.union([
-  z.literal("bullet"),
-  z.literal("numbered")
-]) 
+const listTypeSchema = z.union([z.literal("bullet"), z.literal("numbered")]);
 
 // Base block schema
 const baseBlockSchema = z.object({
   id: z.string(),
   created_at: z.string(),
-  last_modified: z.string()
+  last_modified: z.string(),
 });
 
 // Block schemas using discriminated unions
 const headingSchema = baseBlockSchema.extend({
   type: z.literal("heading"),
   level: headingLevelSchema,
-  content: z.string()
+  content: z.string(),
 });
 
 const paragraphSchema = baseBlockSchema.extend({
   type: z.literal("paragraph"),
-  content: z.string()
+  content: z.string(),
 });
 
 const listSchema = baseBlockSchema.extend({
   type: z.literal("list"),
   style: listTypeSchema,
-  items: z.array(z.string())
+  items: z.array(z.string()),
 });
 
 const codeSchema = baseBlockSchema.extend({
   type: z.literal("code"),
   language: z.string(),
   content: z.string(),
-  filename: z.string().optional()
+  filename: z.string().optional(),
 });
 
 const quoteSchema = baseBlockSchema.extend({
   type: z.literal("quote"),
-  content: z.string()
+  content: z.string(),
 });
 
 // Combined block schema
@@ -58,7 +55,7 @@ const blockSchema = z.discriminatedUnion("type", [
   paragraphSchema,
   listSchema,
   codeSchema,
-  quoteSchema
+  quoteSchema,
 ]);
 
 // Complete blog schema
@@ -73,17 +70,17 @@ const generatedBlogSchema = z.object({
   content: z.array(blockSchema),
 });
 
-export type GeneratedBlogType = z.infer<typeof generatedBlogSchema>
+export type GeneratedBlogType = z.infer<typeof generatedBlogSchema>;
 
 // Validation schemas
 const validationErrorSchema = z.object({
   field: z.string(),
-  message: z.string()
+  message: z.string(),
 });
 
 const validationResultSchema = z.object({
   isValid: z.boolean(),
-  errors: z.array(validationErrorSchema).optional()
+  errors: z.array(validationErrorSchema).optional(),
 });
 
 // Infer all our types from the schemas
@@ -100,42 +97,37 @@ export type GeneratedBlog = z.infer<typeof generatedBlogSchema>;
 export type ValidationError = z.infer<typeof validationErrorSchema>;
 export type ValidationResult = z.infer<typeof validationResultSchema>;
 
+export const isHeading = (block: Block): block is Heading =>
+  block.type === "heading" && headingSchema.safeParse(block).success;
 
-export const isHeading = (block: Block): block is Heading => 
- block.type === 'heading' && headingSchema.safeParse(block).success
+export const isParagraph = (block: Block): block is Paragraph =>
+  block.type === "paragraph" && paragraphSchema.safeParse(block).success;
 
-export const isParagraph = (block: Block): block is Paragraph => 
-    block.type === 'paragraph' && paragraphSchema.safeParse(block).success
+export const isList = (block: Block): block is List =>
+  block.type === "list" && listSchema.safeParse(block).success;
 
-export const isList = (block: Block): block is List => 
-    block.type === "list" && listSchema.safeParse(block).success;
-  
-  export const isCode = (block: Block): block is Code => 
-    block.type === "code" && codeSchema.safeParse(block).success;
-  
-  export const isQuote = (block: Block): block is Quote => 
-    block.type === "quote" && quoteSchema.safeParse(block).success;
+export const isCode = (block: Block): block is Code =>
+  block.type === "code" && codeSchema.safeParse(block).success;
 
- 
-  export const validateBlog = (blog: unknown): ValidationResult => {
-    const result = generatedBlogSchema.safeParse(blog)
+export const isQuote = (block: Block): block is Quote =>
+  block.type === "quote" && quoteSchema.safeParse(block).success;
 
-    if (!result.success) {
-        return {
-          isValid: false,
-          errors: result.error.errors.map(error => ({
-            field: error.path.join("."),
-            message: error.message
-          }))
-        };
-      }
-    
-      return {
-        isValid: true
-      };
+export const validateBlog = (blog: unknown): ValidationResult => {
+  const result = generatedBlogSchema.safeParse(blog);
+
+  if (!result.success) {
+    return {
+      isValid: false,
+      errors: result.error.errors.map((error) => ({
+        field: error.path.join("."),
+        message: error.message,
+      })),
+    };
   }
 
-  export {
-    generatedBlogSchema,
-    blockSchema,
-  }
+  return {
+    isValid: true,
+  };
+};
+
+export { generatedBlogSchema, blockSchema };

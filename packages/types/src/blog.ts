@@ -1,61 +1,58 @@
-
 interface TiptapDocument {
-  type: 'doc';
+  type: "doc";
   content: Array<
     | ParagraphNode
     | HeadingNode
     | BulletListNode
     | OrderedListNode
     | CodeBlockNode
-    | BlockquoteNode 
+    | BlockquoteNode
     | ImageNode
   >;
 }
 
 interface ParagraphNode {
-  type: 'paragraph';
+  type: "paragraph";
   attrs?: {
-    textAlign?: 'left' | 'center' | 'right' | 'justify';
+    textAlign?: "left" | "center" | "right" | "justify";
     aiGenerated?: boolean;
   };
   content: Array<TextContent | HardBreakNode>;
 }
 
 interface HardBreakNode {
-  type: 'hardBreak';
+  type: "hardBreak";
 }
 
 interface HeadingNode {
-  type: 'heading';
+  type: "heading";
   attrs: {
     level: 1 | 2 | 3;
-    textAlign?: 'left' | 'center' | 'right' | 'justify';
+    textAlign?: "left" | "center" | "right" | "justify";
   };
   content: Array<TextContent>;
 }
 
-
 interface BulletListNode {
-  type: 'bulletList';
+  type: "bulletList";
   content: Array<ListItemNode>;
 }
 
 interface ListItemNode {
-  type: 'listItem';
+  type: "listItem";
   content: Array<ParagraphNode | BulletListNode | OrderedListNode>; // Yes, lists can be nested!
 }
 
-
 interface OrderedListNode {
-  type: 'orderedList';
+  type: "orderedList";
   attrs?: {
-    start?: number; 
+    start?: number;
   };
   content: Array<ListItemNode>;
 }
 
 interface CodeBlockNode {
-  type: 'codeBlock';
+  type: "codeBlock";
   attrs?: {
     language?: string;
   };
@@ -63,12 +60,12 @@ interface CodeBlockNode {
 }
 
 interface BlockquoteNode {
-  type: 'blockquote';
-  content: Array<ParagraphNode | HeadingNode>; 
+  type: "blockquote";
+  content: Array<ParagraphNode | HeadingNode>;
 }
 
 interface ImageNode {
-  type: 'image';
+  type: "image";
   attrs: {
     src: string;
     alt?: string;
@@ -79,21 +76,18 @@ interface ImageNode {
 }
 
 interface TextContent {
-  type: 'text';
+  type: "text";
   text: string;
-  marks?: Array<Mark>; 
+  marks?: Array<Mark>;
 }
-
 
 interface Mark {
-  type: 'bold' | 'italic' | 'code' | 'link';
+  type: "bold" | "italic" | "code" | "link";
   attrs?: {
-    href?: string; 
-    target?: string; 
+    href?: string;
+    target?: string;
   };
 }
-
-
 
 export {
   TiptapDocument,
@@ -108,4 +102,4 @@ export {
   Mark,
   ImageNode,
   OrderedListNode,
-}
+};

@@ -4,10 +4,10 @@ import { HeroDash } from "./Hero-Dash";
 import { ConnectingThreads } from "./Connecting-Threads";
 import { What } from "./what";
 import { useUserStore } from "@/store/useUserStore";
-import { useToast} from '@dumpanddone/ui'
+import { useToast } from "@dumpanddone/ui";
 
 const LandingPage = () => {
-  const { toast } = useToast()
+  const { toast } = useToast();
   const isLoggedIn = useUserStore((state) => state.user !== null);
   const clearUser = useUserStore((state) => state.clearUser);
   const pathRef = useRef<SVGPathElement>(null);
@@ -90,7 +90,7 @@ const LandingPage = () => {
                 clearUser();
                 toast({
                   title: "You logged out!",
-                })
+                });
               } else {
                 navigate({
                   to: "/login",
@@ -136,14 +136,14 @@ const LandingPage = () => {
 
         <div
           ref={buttonRef}
-          onClick={() => navigate({
-            to: "/dashboard"
-          })}
+          onClick={() =>
+            navigate({
+              to: "/dashboard",
+            })
+          }
           className="w-full flex items-center justify-center mb-32"
         >
-          <div
-            className="inline-block p-[2px] bg-gradient-to-t from-purple-900 to-purple-600 rounded-[6px] shadow-inner"
-          >
+          <div className="inline-block p-[2px] bg-gradient-to-t from-purple-900 to-purple-600 rounded-[6px] shadow-inner">
             {/* <TwinkleStars className="relative"> */}
             <span className="hover:none outline-none border-none inline-flex items-center shadow-[0px_0px_10px_1px_#a855f7] px-3 py-1 text-sm font-medium rounded-md bg-purple-950 text-white bg-gradient-to-t from-purple-950 to-purple-500">
               Create your first blog
@@ -312,7 +312,7 @@ const PathAnimation = () => {
               filter: "blur(0.2px)",
             }}
           />
-        ))
+        )),
       )}
     </svg>
   );

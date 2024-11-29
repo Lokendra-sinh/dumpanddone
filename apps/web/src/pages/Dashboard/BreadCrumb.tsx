@@ -16,12 +16,12 @@ export const DumpanddoneBreadcrumb = () => {
     <Breadcrumb>
       <BreadcrumbList>
         {routes.map((r) => (
-          <>
+          <div className="flex items-center gap-2" key={r.id}>
             <BreadcrumbItem className="hidden md:block">
               <Link to={r.pathname}>{r.context.title}</Link>
             </BreadcrumbItem>
             <BreadcrumbSeparator className="hidden md:block" />
-          </>
+          </div>
         ))}
       </BreadcrumbList>
     </Breadcrumb>

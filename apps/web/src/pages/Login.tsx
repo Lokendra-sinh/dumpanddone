@@ -48,6 +48,11 @@ export function Login() {
     },
   });
 
+  const handleGitHubLogin = () => {
+    
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${import.meta.env.VITE_GITHUB_CLIENT_ID}&redirect_uri=${import.meta.env.VITE_GITHUB_REDIRECT_URI}&scope=user`;
+  };
+
   const login = useGoogleLogin({
     onSuccess: (tokenResponse) => {
       console.log("token response is", tokenResponse);
@@ -84,7 +89,7 @@ export function Login() {
         <div className="p-6 pt-0">
           <div className="grid gap-4">
             <div className="grid gap-2">
-              <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full">
+              <button onClick={handleGitHubLogin} className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full">
                 <svg viewBox="0 0 438.549 438.549" className="mr-2 h-4 w-4">
                   <path
                     fill="currentColor"

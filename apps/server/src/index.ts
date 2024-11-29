@@ -9,6 +9,8 @@ import { googleLogin } from "./routers/user";
 import { verifyJwtToken } from "./utils/verify-jwt-token";
 import { generateJwtToken } from "./utils/generate-jwt-token";
 import cookieParser from "cookie-parser";
+import { githubLogin } from "./routers/github-login";
+import OpenAI from "openai";
 
 dotenv.config();
 
@@ -16,9 +18,15 @@ export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+export const openai = new OpenAI({
+  baseURL: 'https://api.deepseek.com',
+  apiKey: process.env.DEEPSEEK_AI_KEY
+})
+
 const appRouter = router({
   generateBlog: generateBlog,
   googleLogin: googleLogin,
+  githubLogin: githubLogin,
 });
 
 const app = express();
@@ -41,7 +49,6 @@ app.use(
     }): Promise<BaseContext & Partial<AuthContext>> => {
       const token = req.cookies.authToken;
 
-      console.log("TOKEN init is", req);
 
       const baseContextWithRes = {
         userId: undefined,

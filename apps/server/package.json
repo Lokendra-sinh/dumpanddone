@@ -33,6 +33,7 @@
     "drizzle-orm": "^0.36.3",
     "express": "^4.21.1",
     "jsonwebtoken": "^9.0.2",
+    "openai": "^4.73.1",
     "postgres": "^3.4.5",
     "uuid": "^11.0.3",
     "zod": "^3.23.8"

@@ -12,21 +12,29 @@ import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@dumpanddone/ui";
 import { Upload, Eye, Palette, FileDown } from "lucide-react";
 import { trpc } from "../../utils/trpc";
 import { AppSidebar } from "../../components/app-sidebar";
 import { DumpanddoneBreadcrumb } from "./BreadCrumb";
 import { Playground } from "./Playground";
-import { useDashboard } from "../../providers/dashboard-provider";
+import { DashboardProvider, useDashboard } from "../../providers/dashboard-provider";
 import { ModeToggle } from "../../components/toggle-mode";
 
-export function Dashboard() {
-  console.log("inside dashboard");
+export default function Dashboard() {
   const { blogData, setBlogData } = useDashboard();
   console.log("blogDATA from dashboar sis", blogData);
   const [content, setContent] = useState<string>("");
   const [preview, setPreview] = useState("");
+  const [activeTab, setActiveTab] = useState("upload");
+  const [selectedModel, setSelectedModel] = useState<"claude" | "deepseek">(
+    "claude"
+  );
 
   const generateBlogMutation = trpc.generateBlog.useMutation({
     onSuccess: (res) => {
@@ -37,18 +45,21 @@ export function Dashboard() {
   });
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value);
+    setContent(e.target.value.trim());
     setPreview(e.target.value);
   };
 
   const generateBlog = () => {
-    generateBlogMutation.mutate({ content });
+    generateBlogMutation.mutate({ content, model: selectedModel });
   };
 
   return (
+    <DashboardProvider>
     <SidebarProvider className="">
       <AppSidebar className="bg-background text-foregroun" />
-      <SidebarInset className="max-h-screen overflow-auto">
+      
+      
+      <SidebarInset className="h-screen">
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 justify-between">
           <div className="flex items-center">
             <SidebarTrigger className="bg-background text-foreground -ml-1" />
@@ -57,9 +68,9 @@ export function Dashboard() {
           </div>
           <ModeToggle />
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4">
-          <div className="w-full flex-1 p-6 overflow-auto">
-            <Tabs defaultValue="upload">
+        <div className="w-full h-content flex flex-1 flex-col gap-4 p-2">
+          <div className="w-full flex-1 p-6">
+            <Tabs defaultValue="upload" onValueChange={setActiveTab}>
               <div className="w-full flex items-center justify-between">
                 <TabsList className="">
                   <TabsTrigger value="upload">
@@ -75,22 +86,24 @@ export function Dashboard() {
                     Playground
                   </TabsTrigger>
                 </TabsList>
-                <div className="flex-1 flex justify-end space-x-4">
-                  <Button
-                    variant="outline"
-                    className="bg-background text-foreground"
-                  >
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Export as HTML
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="bg-background text-foreground"
-                  >
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Export as PDF
-                  </Button>
-                </div>
+                {activeTab === "playground" && (
+                  <div className="flex-1 flex justify-end space-x-4">
+                    <Button
+                      variant="outline"
+                      className="bg-background text-foreground"
+                    >
+                      <FileDown className="mr-2 h-4 w-4" />
+                      Export as HTML
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="bg-background text-foreground"
+                    >
+                      <FileDown className="mr-2 h-4 w-4" />
+                      Export as PDF
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <TabsContent value="upload">
@@ -102,6 +115,22 @@ export function Dashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
+                    <div className="mb-4">
+                      <Select
+                        value={selectedModel}
+                        onValueChange={(value: "claude" | "deepseek") =>
+                          setSelectedModel(value)
+                        }
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Select the model" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="claude">Claude</SelectItem>
+                          <SelectItem value="deepseek">Deepseek</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <Textarea
                       placeholder="Paste your content here..."
                       className="min-h-[300px]"
@@ -131,17 +160,9 @@ export function Dashboard() {
                 </Card>
               </TabsContent>
 
-              <TabsContent className="overflow-auto" value="playground">
+              <TabsContent className="flex-1 overflow-auto" value="playground">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Playground</CardTitle>
-                    <CardDescription>Customize your blog post</CardDescription>
-                  </CardHeader>
-                  <CardContent className="">
-                    <div className="h-[600px] w-full">
-                      <Playground />
-                    </div>
-                  </CardContent>
+                  <Playground />
                 </Card>
               </TabsContent>
             </Tabs>
@@ -149,5 +170,6 @@ export function Dashboard() {
         </div>
       </SidebarInset>
     </SidebarProvider>
+    </DashboardProvider>
   );
 }

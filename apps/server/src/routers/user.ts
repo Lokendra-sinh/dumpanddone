@@ -79,7 +79,6 @@ export const googleLogin = authProcedure
           name: userData.name,
           email: userData.email,
           avatar: userData.picture,
-          password: null,
           auth_method: "google",
         });
       } catch (error) {

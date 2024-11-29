@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { HeroDash } from "./Hero-Dash";
 import { ConnectingThreads } from "./Connecting-Threads";
 import { What } from "./what";
@@ -16,6 +16,8 @@ const LandingPage = () => {
   const dashboardRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [position, setPosition] = useState(0);
+  const [isGlowing, setIsGlowing] = useState(false);
+  const glowTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     const path = pathRef.current;
@@ -35,6 +37,30 @@ const LandingPage = () => {
     const frameId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frameId);
   }, [position]);
+
+  const onAnimationComplete = useCallback(() => {
+    // Clear any existing timeout
+    if (glowTimeoutRef.current) {
+      clearTimeout(glowTimeoutRef.current);
+    }
+    
+    // Set glowing state
+    setIsGlowing(true);
+    
+    // Set new timeout for resetting glow
+    glowTimeoutRef.current = setTimeout(() => {
+      setIsGlowing(false);
+    }, 3000); // Duration matches CSS animation
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (glowTimeoutRef.current) {
+        clearTimeout(glowTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="relative w-full">
       <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-purple-950/50 to-black" />
@@ -152,11 +178,11 @@ const LandingPage = () => {
           </div>
         </div>
 
-        <HeroDash ref={dashboardRef} />
+        <HeroDash ref={dashboardRef} isGlowing={isGlowing} />
         <div className="absolute bottom-0 left-0 right-0 w-full h-[600px] bg-gradient-to-t from-black to-transparent"></div>
       </main>
 
-      <ConnectingThreads buttonRef={buttonRef} dashboardRef={dashboardRef} />
+      <ConnectingThreads buttonRef={buttonRef} dashboardRef={dashboardRef} onAnimationComplete={onAnimationComplete} />
 
       <svg
         width="100%"
@@ -178,7 +204,7 @@ const LandingPage = () => {
 
 export default LandingPage;
 
-interface Dot {
+export interface Dot {
   x: number;
   y: number;
   opacity: number;

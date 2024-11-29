@@ -1,12 +1,11 @@
-import { createRootRoute, createRoute, Outlet } from "@tanstack/react-router";
-import { Dashboard } from "../pages/Dashboard/Dashboard";
+import { createRootRoute, createRoute, lazyRouteComponent, Outlet } from "@tanstack/react-router";
 import LandingPage from "../pages/Landing/LandingPage";
 import { ThemeProvider } from "../providers/theme-provider";
-import { DashboardProvider } from "../providers/dashboard-provider";
 import { Login } from "../pages/Login";
 import { Register } from "../pages/Register";
 import { Toaster } from "@dumpanddone/ui";
 import { AuthRoute } from "./authenticated-route";
+import { GithubCallback } from "@/pages/GithubCallback";
 
 export const RootRoute = createRootRoute({
   component: () => (
@@ -41,6 +40,21 @@ export const LoginRoute = createRoute({
   component: Login,
 });
 
+export const GithubCallbackRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/auth/github-callback",
+  validateSearch: (search) => {
+    console.log("search is", search)
+    if(typeof search.code !== 'string'){
+      throw new Error("No code provided. Please retry or use another method")
+    }
+    return {
+      code: search.code!
+    }
+  },
+  component: GithubCallback,
+})
+
 export const RegisterRoute = createRoute({
   getParentRoute: () => RootRoute,
   path: "/register",
@@ -50,13 +64,7 @@ export const RegisterRoute = createRoute({
 export const DashboardRoute = createRoute({
   getParentRoute: () => AuthRoute,
   path: "/dashboard",
-  component: () => {
-    return (
-      <DashboardProvider>
-        <Dashboard />
-      </DashboardProvider>
-    );
-  },
+  component: lazyRouteComponent(() => import('../pages/Dashboard/Dashboard')),
   beforeLoad: () => {
     return {
       title: "Dashboard",

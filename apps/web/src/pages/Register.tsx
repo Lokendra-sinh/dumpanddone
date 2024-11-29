@@ -12,9 +12,12 @@ import {
   Button,
 } from "@dumpanddone/ui";
 import { Loader2, User } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Formik, Form, Field } from "formik";
 import * as z from "zod";
+import { useUserStore } from "@/store/useUserStore";
+import { trpc } from "@/utils/trpc";
+import { useGoogleLogin } from "@react-oauth/google";
 
 const registerSchema = z
   .object({
@@ -49,7 +52,37 @@ const validate = (values: RegisterFormData) => {
 };
 
 export function Register() {
+  const setUser = useUserStore((state) => state.setUser);
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = React.useState(false);
+
+
+  const googleSignupMutation = trpc.googleLogin.useMutation({
+    onSuccess: (res) => {
+      setUser(res.user);
+      navigate({
+        to: "/dashboard",
+      });
+    },
+    onError: (e) => {
+      console.error("Error while logging in", e);
+    },
+  });
+
+  const login = useGoogleLogin({
+    onSuccess: (tokenResponse) => {
+      console.log("token response is", tokenResponse);
+      googleSignupMutation.mutate({ accessToken: tokenResponse.access_token });
+    },
+    onError: (e) => {
+      console.log("error while login is", e);
+    },
+  });
+
+  const handleGithubSignup = () => {
+    
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${import.meta.env.VITE_GITHUB_CLIENT_ID}&redirect_uri=${import.meta.env.VITE_GITHUB_REDIRECT_URI}&scope=user`;
+  };
 
   const handleSubmit = async (values: RegisterFormData) => {
     try {
@@ -75,7 +108,7 @@ export function Register() {
         </CardHeader>
         <CardContent>
           <div className="grid w-full items-center gap-4">
-            <Button className="w-full" variant="outline" disabled={isLoading}>
+            <Button onClick={() => login()} className="w-full" variant="outline" disabled={isLoading}>
               <svg
                 className="mr-2 h-4 w-4"
                 aria-hidden="true"
@@ -93,7 +126,9 @@ export function Register() {
               </svg>
               Sign up with Google
             </Button>
-            <Button className="w-full" variant="outline" disabled={isLoading}>
+            <Button 
+            onClick={handleGithubSignup}
+            className="w-full" variant="outline" disabled={isLoading}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"

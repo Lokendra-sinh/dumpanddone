@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 import { router } from "./router.ts";
@@ -28,7 +28,6 @@ const trpcClient = trpc.createClient({
 const queryClient = new QueryClient();
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_AUTH_ID}>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
@@ -36,5 +35,4 @@ createRoot(document.getElementById("root")!).render(
         </QueryClientProvider>
       </trpc.Provider>
     </GoogleOAuthProvider>
-  </StrictMode>,
 );

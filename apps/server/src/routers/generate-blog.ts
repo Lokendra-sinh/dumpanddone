@@ -9,6 +9,7 @@ import { users } from "../db/schema";
 
 const GenerateBlogInputSchema = z.object({
   content: z.string().min(1),
+  model: z.enum(["claude", "deepseek"])
 });
 
 const GeneratedBlogOutputSchema = z.object({
@@ -30,7 +31,7 @@ export const GeneratedBlogResponseSchema = z.discriminatedUnion("status", [
 export const generateBlog = protectedProcedure
   .input(GenerateBlogInputSchema)
   .mutation(async ({ ctx, input }) => {
-    const { content } = input;
+    const { content, model } = input;
     if (!content) {
       throw new TRPCError({
         code: "PARSE_ERROR",

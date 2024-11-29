@@ -11,6 +11,40 @@ export default {
   darkMode: ["class"],
   theme: {
   	extend: {
+		height: {
+			'screen-minus-16': 'calc(100vh - 64px)',
+			'screen-minus-32': 'calc(100vh - 160px)',
+			'content': 'calc(100vh - 64px)',
+			'screen-minus-48': 'calc(100vh - 260px)'
+		},
+		keyframes: {
+			'shadow-pulse': {
+				'0%': {
+				  boxShadow: '0 0 5px 5px rgba(168, 85, 247, 0.5)',
+				},
+				'50%': {
+				  boxShadow: '0 0 40px 10px rgba(168, 85, 247, 0.7)',
+				},
+				'100%': {
+				  boxShadow: '0 0 80px 15px rgba(168, 85, 247, 0.5)',
+				},
+			  },
+			'dashboard-glow': {
+			  '0%': {
+				transform: 'scale(1)',
+			  },
+			  '50%': {
+				transform: 'scale(1.01)',
+			  },
+			  '100%': {
+				transform: 'scale(1.5)',
+			  },
+			},
+		  },
+		  animation: {
+			'dashboard-glow': 'dashboard-glow 6s ease-in-out',
+			'shadow-pulse': 'shadow-pulse 6s ease-in-out',
+		  },
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

@@ -6,7 +6,7 @@ interface AddUserProps {
   name: string;
   email: string;
   avatar: string;
-  password: string | null;
+  password?: string;
   auth_method: "email" | "google" | "github";
 }
 

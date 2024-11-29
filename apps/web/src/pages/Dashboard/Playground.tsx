@@ -9,11 +9,9 @@ import TaskItem from "@tiptap/extension-task-item";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import CharacterCount from "@tiptap/extension-character-count";
 import { all, createLowlight } from "lowlight";
-// import { CatchBoundary } from "@tanstack/react-router";
 import {
   CardContent,
   CardDescription,
-  // CardHeader,
   CardTitle,
 } from "@dumpanddone/ui";
 import { useEffect, useState } from "react";

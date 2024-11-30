@@ -25,12 +25,12 @@ const UserSchema = z.object({
   ]),
 });
 
-const LoginResponseSchema = z.object({
+export const LoginResponseSchema = z.object({
   status: z.string(),
   user: UserSchema,
 });
 
-type LoginResponseSchemaType = z.infer<typeof LoginResponseSchema>;
+export type LoginResponseSchemaType = z.infer<typeof LoginResponseSchema>;
 
 // Cookie config can be reused
 const COOKIE_CONFIG = {

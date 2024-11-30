@@ -1,18 +1,10 @@
 import { useDashboard } from "@/providers/dashboard-provider";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Placeholder from "@tiptap/extension-placeholder";
-import TextAlign from "@tiptap/extension-text-align";
-import Image from "@tiptap/extension-image";
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
-import CharacterCount from "@tiptap/extension-character-count";
-import { all, createLowlight } from "lowlight";
+import { EditorContent } from "@tiptap/react";
 import {
   CardContent,
   CardDescription,
   CardTitle,
+  useToast,
 } from "@dumpanddone/ui";
 import { useEffect, useState } from "react";
 import {
@@ -24,129 +16,63 @@ import {
   DropdownMenuSeparator
 } from "@dumpanddone/ui";
 import { Sparkles, Image as ImageIcon, Hash, List, ListOrdered, CheckSquare, ToggleLeft, Quote } from "lucide-react";
+import { EditorHandlers, useEditorInstance } from "@/hooks/useEditorInstance";
+import { useEditorConfig } from "@/hooks/useEditorConfig";
+import { commandsMap } from "@/utils/commandsMap";
 
-const lowlight = createLowlight(all);
 
 const limit = 1500;
 
 export const Playground = () => {
   const { blogData } = useDashboard();
+  const { toast } = useToast()
+  const config = useEditorConfig()
   const [coords, setCoords] = useState<{ left: number; top: number } | null>(
     null
   );
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  console.log("coords are", coords);
+  
 
-  console.log("BLOG DATA is", blogData);
-
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        // Ordered list configuration
-        orderedList: {
-          HTMLAttributes: {
-            class: "list-decimal space-y-2 my-4",
-          },
-        },
-        // Heading configuration
-        heading: {
-          levels: [1, 2, 3],
-          HTMLAttributes: {
-            class: "font-medium my-6 text-2xl",
-          },
-        },
-        // Blockquote configuration
-        blockquote: {
-          HTMLAttributes: {
-            class:
-              "border-l-4 border-zinc-400 bg-zinc-100 my-6 py-2 px-4 rounded",
-          },
-        },
-        // Bullet list configuration
-        bulletList: {
-          HTMLAttributes: {
-            class: "list-disc space-y-2 my-4 px-4",
-          },
-        },
-        // Paragraph configuration
-        paragraph: {
-          HTMLAttributes: {
-            class: "my-2 leading-relaxed",
-          },
-        },
-        // Code block configuration
-        codeBlock: {
-          HTMLAttributes: {
-            class: "bg-zinc-100 rounded p-4 font-mono text-sm my-4",
-          },
-        },
-      }),
-      // Additional extensions
-      Placeholder.configure({
-        placeholder: "Type / to browse options",
-        emptyEditorClass:
-          "text-gray-400 before:content-[attr(data-placeholder)] before:float-left before:pointer-events-none",
-      }),
-      TextAlign.configure({
-        types: ["heading", "paragraph"],
-      }),
-      TaskList.configure({
-        HTMLAttributes: {
-          class: "not-prose space-y-2 my-4",
-        },
-      }),
-      TaskItem.configure({
-        HTMLAttributes: {
-          class: "flex items-start gap-2",
-        },
-        nested: true,
-      }),
-      Image.configure({
-        HTMLAttributes: {
-          class: "rounded-lg max-w-full my-4",
-        },
-      }),
-      CodeBlockLowlight.configure({
-        lowlight,
-        HTMLAttributes: {
-          class: "bg-zinc-100 rounded p-4 font-mono text-sm my-4",
-        },
-      }),
-      CharacterCount.configure({
-        limit,
-      }),
-    ],
-    content: blogData,
-    onUpdate: ({ editor }) => {
-      console.log("Current HTML:", editor.getHTML());
+  
+const handlers: EditorHandlers = {
+  onUpdate: ({editor}) => {
+    console.log("Current HTML:", editor.getHTML());
       console.log("Current JSON:", editor.getJSON());
-    },
-    editorProps: {
-      handleKeyDown: (view, event) => {
-        if(event.key === '/'){
-          const { state } = view
-          const { from } = state.selection
-          const coords = view.coordsAtPos(from)
-          
-          setCoords({ 
-            left: coords.left,  // Use actual left position
-            top: coords.top     // Use actual top position
-          })
-          setIsDropdownOpen(true)
-          return false
-        }
-      },
-      attributes: {
-        class: "prose prose-zinc max-w-none focus:outline-none min-h-[200px]",
-      },
-    },
-  });
+  },
+  editorProps: {
+    handleKeyDown: (view, event) => {
+      if(event.key === '/'){
+        const { state } = view
+        const { from } = state.selection
+        const coords = view.coordsAtPos(from)
+        
+        setCoords({ left: coords.left, top: coords.top })
+        setIsDropdownOpen(true)
+        return false
+      }
+    }
+  }
+}
+
+const editor = useEditorInstance({config, content: blogData, handlers})
 
   const handleMenuItemClick = (event: string) => {
     console.log("event is", event);
-    // Handle menu item click (e.g., insert content into editor)
-    // editor.commands.insertContent(item);
-    setIsDropdownOpen(false);
+    console.log("commands map is", commandsMap);
+    const command = commandsMap.get(event)
+    console.log("command is", command);
+    if(command && editor){
+      const success = command(editor)
+      if(!success){
+        toast({
+          variant: 'default',
+          title: "Failed to execute the command"
+        })
+        return
+      }
+      setIsDropdownOpen(false)
+      editor.commands.focus()
+    }
   };
 
   useEffect(() => {

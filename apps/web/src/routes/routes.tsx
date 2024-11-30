@@ -1,25 +1,49 @@
-import { createRootRoute, createRoute, lazyRouteComponent, Outlet } from "@tanstack/react-router";
+import { createRootRoute, createRoute, lazyRouteComponent, redirect } from "@tanstack/react-router";
 import LandingPage from "../pages/Landing/LandingPage";
-import { ThemeProvider } from "../providers/theme-provider";
 import { Login } from "../pages/Login";
 import { Register } from "../pages/Register";
-import { Toaster } from "@dumpanddone/ui";
 import { AuthRoute } from "./authenticated-route";
 import { GithubCallback } from "@/pages/GithubCallback";
+import { Root } from "@/pages/Root";
+import { useUserStore } from "@/store/useUserStore";
 
 export const RootRoute = createRootRoute({
-  component: () => (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <div className="w-screen min-h-screen bg-black text-white relative overflow-hidden flex flex-col items-center">
-        <Outlet />
-        <Toaster />
-      </div>
-    </ThemeProvider>
-  ),
-  beforeLoad: () => {
-    return {
-      title: "Home",
-    };
+  component: Root,
+  beforeLoad: async () => {    
+    try {
+      const response = await fetch('http://localhost:4000/trpc/silentAuth', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const userData = result.result.data;
+
+        if (userData?.user) {
+          useUserStore.setState({ user: userData.user });
+          return {
+            title: "Home",
+            userData: userData.user // Return user data to be available in other routes
+          };
+        }
+      }
+
+      return {
+        title: "Home",
+        userData: null
+      };
+
+    } catch (error) {
+      console.log("Silent auth check failed:", error);
+      return {
+        title: "Home",
+        userData: null
+      };
+    }
   },
 });
 
@@ -28,6 +52,7 @@ export const IndexRoute = createRoute({
   path: "/",
   component: LandingPage,
   beforeLoad: () => {
+    console.log("inside IndexRoute");
     return {
       title: "Home",
     };
@@ -66,6 +91,19 @@ export const DashboardRoute = createRoute({
   path: "/dashboard",
   component: lazyRouteComponent(() => import('../pages/Dashboard/Dashboard')),
   beforeLoad: () => {
+    const user = useUserStore.getState().user;
+    console.log("USER is", user);
+    
+    if (!user) {
+      throw redirect({
+        to: "/login",
+        search: {
+          redirect: window.location.pathname,
+        },
+      });
+    }
+    
+    return null;
     return {
       title: "Dashboard",
     };

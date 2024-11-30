@@ -11,6 +11,7 @@ import { generateJwtToken } from "./utils/generate-jwt-token";
 import cookieParser from "cookie-parser";
 import { githubLogin } from "./routers/github-login";
 import OpenAI from "openai";
+import { silentAuth } from "./routers/silent-auth";
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ const appRouter = router({
   generateBlog: generateBlog,
   googleLogin: googleLogin,
   githubLogin: githubLogin,
+  silentAuth: silentAuth,
 });
 
 const app = express();

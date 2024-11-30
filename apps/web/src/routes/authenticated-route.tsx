@@ -1,16 +1,12 @@
 import { createRoute, Outlet, redirect } from "@tanstack/react-router";
 import { RootRoute } from "./routes";
-import { useUserStore } from "@/store/useUserStore";
 
 export const AuthRoute = createRoute({
   getParentRoute: () => RootRoute,
-  component: () => <Outlet />,
-  id: "auth-route",
-  beforeLoad: () => {
-    console.log("Checking whether user is logegd in ornot");
-    const isLoggedIn = useUserStore.getState().user !== null;
-    console.log("USer logfed in ", isLoggedIn);
-    if (!isLoggedIn) {
+  loader: async ({ context }) => {
+    // Access the userData from root loader data
+    
+    if (!context.userData) {
       throw redirect({
         to: "/login",
         search: {
@@ -18,5 +14,9 @@ export const AuthRoute = createRoute({
         },
       });
     }
+    
+    return null;
   },
+  component: () => <Outlet />,
+  id: "auth-route",
 });

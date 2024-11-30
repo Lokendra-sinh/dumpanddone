@@ -11,11 +11,12 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const GOOGLE_CLIENT_AUTH_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-const trpcClient = trpc.createClient({
+export const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
       url: "http://localhost:4000/trpc",
       fetch(url, options) {
+        console.log("url and options", url, options)
         return fetch(url, {
           ...options,
           credentials: "include",
@@ -25,7 +26,7 @@ const trpcClient = trpc.createClient({
   ],
 });
 
-const queryClient = new QueryClient();
+export const queryClient = new QueryClient();
 
 createRoot(document.getElementById("root")!).render(
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_AUTH_ID}>

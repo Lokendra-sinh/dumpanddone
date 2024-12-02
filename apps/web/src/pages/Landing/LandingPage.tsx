@@ -43,10 +43,10 @@ const LandingPage = () => {
     if (glowTimeoutRef.current) {
       clearTimeout(glowTimeoutRef.current);
     }
-    
+
     // Set glowing state
     setIsGlowing(true);
-    
+
     // Set new timeout for resetting glow
     glowTimeoutRef.current = setTimeout(() => {
       setIsGlowing(false);
@@ -182,7 +182,11 @@ const LandingPage = () => {
         <div className="absolute bottom-0 left-0 right-0 w-full h-[600px] bg-gradient-to-t from-black to-transparent"></div>
       </main>
 
-      <ConnectingThreads buttonRef={buttonRef} dashboardRef={dashboardRef} onAnimationComplete={onAnimationComplete} />
+      <ConnectingThreads
+        buttonRef={buttonRef}
+        dashboardRef={dashboardRef}
+        onAnimationComplete={onAnimationComplete}
+      />
 
       <svg
         width="100%"

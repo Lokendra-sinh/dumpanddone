@@ -116,5 +116,5 @@ export const blogGeneratorPrompt = (conversation: string) => {
   - There are no null or undefined values.
   - There are no trailing commas.
   
-  Now, generate the Tiptap-compatible JSON structure for the blog post based on the conversation provided and your analysis.`
-}
+  Now, generate the Tiptap-compatible JSON structure for the blog post based on the conversation provided and your analysis.`;
+};

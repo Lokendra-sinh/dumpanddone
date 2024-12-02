@@ -20,9 +20,9 @@ export const anthropic = new Anthropic({
 });
 
 export const openai = new OpenAI({
-  baseURL: 'https://api.deepseek.com',
-  apiKey: process.env.DEEPSEEK_AI_KEY
-})
+  baseURL: "https://api.deepseek.com",
+  apiKey: process.env.DEEPSEEK_AI_KEY,
+});
 
 const appRouter = router({
   generateBlog: generateBlog,
@@ -50,7 +50,6 @@ app.use(
       res,
     }): Promise<BaseContext & Partial<AuthContext>> => {
       const token = req.cookies.authToken;
-
 
       const baseContextWithRes = {
         userId: undefined,

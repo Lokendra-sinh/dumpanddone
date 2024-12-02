@@ -18,35 +18,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@dumpanddone/ui";
-import { Upload, Eye, Palette, FileDown } from "lucide-react";
+import { Upload, Palette, FileDown } from "lucide-react";
 import { trpc } from "../../utils/trpc";
 import { AppSidebar } from "../../components/app-sidebar";
 import { DumpanddoneBreadcrumb } from "./BreadCrumb";
-import { Playground } from "./Playground";
-import { DashboardProvider, useDashboard } from "../../providers/dashboard-provider";
+import { useDashboard } from "../../providers/dashboard-provider";
 import { ModeToggle } from "../../components/toggle-mode";
+import { PlaygroundIndex } from "../Playground/playground-index";
 
-export default function Dashboard() {
+export const Dashboard = () => {
   const { blogData, setBlogData } = useDashboard();
   console.log("blogDATA from dashboar sis", blogData);
   const [content, setContent] = useState<string>("");
-  const [preview, setPreview] = useState("");
   const [activeTab, setActiveTab] = useState("upload");
   const [selectedModel, setSelectedModel] = useState<"claude" | "deepseek">(
-    "claude"
+    "claude",
   );
 
   const generateBlogMutation = trpc.generateBlog.useMutation({
     onSuccess: (res) => {
       console.log("res is", res);
       const parsedData = res.data!;
+      console.log("parsed data is", parsedData);
       setBlogData(parsedData);
     },
   });
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setContent(e.target.value.trim());
-    setPreview(e.target.value);
   };
 
   const generateBlog = () => {
@@ -54,11 +53,9 @@ export default function Dashboard() {
   };
 
   return (
-    <DashboardProvider>
     <SidebarProvider className="">
-      <AppSidebar className="bg-background text-foregroun" />
-      
-      
+      <AppSidebar className="bg-background text-foreground" />
+
       <SidebarInset className="h-screen">
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 justify-between">
           <div className="flex items-center">
@@ -76,10 +73,6 @@ export default function Dashboard() {
                   <TabsTrigger value="upload">
                     <Upload className="mr-2 h-4 w-4" />
                     Upload
-                  </TabsTrigger>
-                  <TabsTrigger value="preview">
-                    <Eye className="mr-2 h-4 w-4" />
-                    Preview
                   </TabsTrigger>
                   <TabsTrigger value="playground">
                     <Palette className="mr-2 h-4 w-4" />
@@ -144,25 +137,9 @@ export default function Dashboard() {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="preview">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Preview</CardTitle>
-                    <CardDescription>
-                      See how your blog post will look
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="border p-4 min-h-[300px] prose">
-                      {preview}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
               <TabsContent className="flex-1 overflow-auto" value="playground">
                 <Card>
-                  <Playground />
+                  <PlaygroundIndex />
                 </Card>
               </TabsContent>
             </Tabs>
@@ -170,6 +147,5 @@ export default function Dashboard() {
         </div>
       </SidebarInset>
     </SidebarProvider>
-    </DashboardProvider>
   );
-}
+};

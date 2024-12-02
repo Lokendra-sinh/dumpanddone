@@ -36,7 +36,7 @@ export const ConnectingThreads: React.FC<ConnectingThreadsProps> = ({
   const rightPathRef = useRef<SVGPathElement>(null);
   const [pathDots, setPathDots] = useState<Record<string, Dot[]>>({});
   const animationCompleteRef = useRef(false);
-  
+
   const numDots = 20;
   const dotSpacing = 3;
   const ANIMATION_DURATION = 3000;
@@ -45,7 +45,7 @@ export const ConnectingThreads: React.FC<ConnectingThreadsProps> = ({
   // Create dynamic paths based on lines state
   const getPaths = (): PathData[] => {
     if (!lines) return [];
-    
+
     return [
       {
         id: "leftPath",
@@ -96,7 +96,7 @@ export const ConnectingThreads: React.FC<ConnectingThreadsProps> = ({
       // Left path
       const leftStart = svgPoint(
         buttonRect.left + buttonRect.width / 2,
-        buttonRect.bottom
+        buttonRect.bottom,
       );
       const leftEnd = svgPoint(dashRect.left + 200, dashRect.top);
       const leftControl = {
@@ -107,7 +107,7 @@ export const ConnectingThreads: React.FC<ConnectingThreadsProps> = ({
       // Right path (mirrored)
       const rightStart = svgPoint(
         buttonRect.left + buttonRect.width / 2,
-        buttonRect.bottom
+        buttonRect.bottom,
       );
       const rightEnd = svgPoint(dashRect.right - 200, dashRect.top);
       const rightControl = {
@@ -162,11 +162,11 @@ export const ConnectingThreads: React.FC<ConnectingThreadsProps> = ({
           }
 
           const point = pathElement.getPointAtLength(dotPosition);
-          
+
           // Calculate opacity with smooth fade
           const distanceFromHead = index * dotSpacing;
           const maxDistance = numDots * dotSpacing;
-          const opacity = Math.pow(1 - (distanceFromHead / maxDistance), 1.5);
+          const opacity = Math.pow(1 - distanceFromHead / maxDistance, 1.5);
 
           return {
             x: point.x,
@@ -246,7 +246,7 @@ export const ConnectingThreads: React.FC<ConnectingThreadsProps> = ({
               filter: "blur(0.2px)",
             }}
           />
-        ))
+        )),
       )}
     </svg>
   );

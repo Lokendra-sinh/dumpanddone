@@ -1,4 +1,3 @@
-
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 import { router } from "./router.ts";
@@ -16,7 +15,7 @@ export const trpcClient = trpc.createClient({
     httpBatchLink({
       url: "http://localhost:4000/trpc",
       fetch(url, options) {
-        console.log("url and options", url, options)
+        console.log("url and options", url, options);
         return fetch(url, {
           ...options,
           credentials: "include",
@@ -29,11 +28,11 @@ export const trpcClient = trpc.createClient({
 export const queryClient = new QueryClient();
 
 createRoot(document.getElementById("root")!).render(
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_AUTH_ID}>
-      <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-        </QueryClientProvider>
-      </trpc.Provider>
-    </GoogleOAuthProvider>
+  <GoogleOAuthProvider clientId={GOOGLE_CLIENT_AUTH_ID}>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </trpc.Provider>
+  </GoogleOAuthProvider>,
 );

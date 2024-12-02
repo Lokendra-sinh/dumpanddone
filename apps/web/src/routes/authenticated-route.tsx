@@ -5,7 +5,7 @@ export const AuthRoute = createRoute({
   getParentRoute: () => RootRoute,
   loader: async ({ context }) => {
     // Access the userData from root loader data
-    
+
     if (!context.userData) {
       throw redirect({
         to: "/login",
@@ -14,7 +14,7 @@ export const AuthRoute = createRoute({
         },
       });
     }
-    
+
     return null;
   },
   component: () => <Outlet />,

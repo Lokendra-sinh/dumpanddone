@@ -1,11 +1,12 @@
-import { Outlet } from "@tanstack/react-router";
-import Dashboard  from "./Dashboard";
+import { Dashboard } from "./Dashboard";
+import { DashboardProvider } from "@/providers/dashboard-provider";
 
-export const DashboardIndex = () => {
+const DashboardIndex = () => {
   return (
-    <>
+    <DashboardProvider>
       <Dashboard />
-      <Outlet />
-    </>
+    </DashboardProvider>
   );
 };
+
+export default DashboardIndex;

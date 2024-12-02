@@ -9,7 +9,7 @@ import { users } from "../db/schema";
 
 const GenerateBlogInputSchema = z.object({
   content: z.string().min(1),
-  model: z.enum(["claude", "deepseek"])
+  model: z.enum(["claude", "deepseek"]),
 });
 
 const GeneratedBlogOutputSchema = z.object({

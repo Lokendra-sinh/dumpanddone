@@ -56,7 +56,6 @@ export function Register() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = React.useState(false);
 
-
   const googleSignupMutation = trpc.googleLogin.useMutation({
     onSuccess: (res) => {
       setUser(res.user);
@@ -80,7 +79,6 @@ export function Register() {
   });
 
   const handleGithubSignup = () => {
-    
     window.location.href = `https://github.com/login/oauth/authorize?client_id=${import.meta.env.VITE_GITHUB_CLIENT_ID}&redirect_uri=${import.meta.env.VITE_GITHUB_REDIRECT_URI}&scope=user`;
   };
 
@@ -108,7 +106,12 @@ export function Register() {
         </CardHeader>
         <CardContent>
           <div className="grid w-full items-center gap-4">
-            <Button onClick={() => login()} className="w-full" variant="outline" disabled={isLoading}>
+            <Button
+              onClick={() => login()}
+              className="w-full"
+              variant="outline"
+              disabled={isLoading}
+            >
               <svg
                 className="mr-2 h-4 w-4"
                 aria-hidden="true"
@@ -126,9 +129,12 @@ export function Register() {
               </svg>
               Sign up with Google
             </Button>
-            <Button 
-            onClick={handleGithubSignup}
-            className="w-full" variant="outline" disabled={isLoading}>
+            <Button
+              onClick={handleGithubSignup}
+              className="w-full"
+              variant="outline"
+              disabled={isLoading}
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"

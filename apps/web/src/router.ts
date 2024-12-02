@@ -11,7 +11,12 @@ import { AuthRoute } from "./routes/authenticated-route";
 
 const AuthenticatedRoutes = [DashboardRoute];
 
-const NonAuthenticatedRoutes = [IndexRoute, LoginRoute, RegisterRoute, GithubCallbackRoute];
+const NonAuthenticatedRoutes = [
+  IndexRoute,
+  LoginRoute,
+  RegisterRoute,
+  GithubCallbackRoute,
+];
 
 const routeTree = RootRoute.addChildren([
   ...NonAuthenticatedRoutes,

@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { ReactNode } from "@tanstack/react-router";
 import { TiptapDocument } from "../types/tiptap-blog";
+import { socketClient } from "@/utils/socket";
 
-// Now let's update our context type
+
 interface DashboardContextType {
   blogData: TiptapDocument | undefined;
   setBlogData: React.Dispatch<React.SetStateAction<TiptapDocument | undefined>>;
@@ -25,6 +26,14 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({
   const [blogData, setBlogData] = useState<TiptapDocument | undefined>(
     undefined,
   );
+
+  useEffect(() => {
+    socketClient.connect()
+
+    return () => {
+      socketClient.disconnect()
+    }
+  },[])
 
   return (
     <DashboardContext.Provider value={{ blogData, setBlogData }}>

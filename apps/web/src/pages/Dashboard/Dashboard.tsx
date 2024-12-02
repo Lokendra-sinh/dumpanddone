@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { Button } from "@dumpanddone/ui";
 import { Textarea } from "@dumpanddone/ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@dumpanddone/ui";
@@ -17,6 +17,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+  cn
 } from "@dumpanddone/ui";
 import { Upload, Palette, FileDown } from "lucide-react";
 import { trpc } from "../../utils/trpc";
@@ -25,6 +30,7 @@ import { DumpanddoneBreadcrumb } from "./BreadCrumb";
 import { useDashboard } from "../../providers/dashboard-provider";
 import { ModeToggle } from "../../components/toggle-mode";
 import { PlaygroundIndex } from "../Playground/playground-index";
+import { SectionType, socketClient } from "@/utils/socket";
 
 export const Dashboard = () => {
   const { blogData, setBlogData } = useDashboard();
@@ -32,7 +38,7 @@ export const Dashboard = () => {
   const [content, setContent] = useState<string>("");
   const [activeTab, setActiveTab] = useState("upload");
   const [selectedModel, setSelectedModel] = useState<"claude" | "deepseek">(
-    "claude",
+    "claude"
   );
 
   const generateBlogMutation = trpc.generateBlog.useMutation({
@@ -49,7 +55,8 @@ export const Dashboard = () => {
   };
 
   const generateBlog = () => {
-    generateBlogMutation.mutate({ content, model: selectedModel });
+    // generateBlogMutation.mutate({ content, model: selectedModel });
+    socketClient.sendMessage({ type: "START_STREAM", content: content });
   };
 
   return (
@@ -106,6 +113,7 @@ export const Dashboard = () => {
                     <CardDescription>
                       Paste or type your unformatted content here
                     </CardDescription>
+                    <Outline />
                   </CardHeader>
                   <CardContent>
                     <div className="mb-4">
@@ -149,3 +157,65 @@ export const Dashboard = () => {
     </SidebarProvider>
   );
 };
+
+export const Outline = () => {
+  const [sections, setSections] = useState<SectionType[]>([]);
+
+  useEffect(() => {
+    socketClient.onSection((section) => {
+      setSections((prev) => [...prev, section]);
+    });
+  }, []);
+
+  return (
+    <div className="w-full space-y-4">
+      <Accordion type="single" collapsible className="w-full">
+        {sections.map((section, index) => (
+          <Section
+            key={section.title + index}
+            title={section.title}
+            description={section.description}
+            index={index}
+          />
+        ))}
+      </Accordion>
+    </div>
+  );
+};
+
+interface SectionProps {
+  title: string;
+  description: string;
+  index: number
+}
+
+const Section = memo<SectionProps>(({ title, description, index }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, index * 100); // Stagger the animation
+
+    return () => clearTimeout(timer);
+  }, [index]);
+
+  return (
+    <AccordionItem
+      value={`section-${index}`}
+      className={cn(
+        "transition-all duration-300 ease-in-out",
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+      )}
+    >
+      <AccordionTrigger className="text-lg font-medium">
+        {title}
+      </AccordionTrigger>
+      <AccordionContent className="text-muted-foreground">
+        {description}
+      </AccordionContent>
+    </AccordionItem>
+  );
+});
+
+Section.displayName = "Section";

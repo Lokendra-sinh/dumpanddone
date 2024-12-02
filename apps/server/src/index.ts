@@ -12,6 +12,10 @@ import cookieParser from "cookie-parser";
 import { githubLogin } from "./routers/github-login";
 import OpenAI from "openai";
 import { silentAuth } from "./routers/silent-auth";
+import { createServer } from 'http'
+import { WebSocketServer } from "ws";
+import { setupWebSocketHandlers } from "./ws/socket";
+
 
 dotenv.config();
 
@@ -32,6 +36,7 @@ const appRouter = router({
 });
 
 const app = express();
+
 app.use(cookieParser());
 app.use(
   cors({
@@ -40,6 +45,10 @@ app.use(
   }),
 );
 app.use(express.json());
+
+const httpServer = createServer(app)
+export const wss = new WebSocketServer({server: httpServer})
+setupWebSocketHandlers(wss)
 
 app.use(
   "/trpc",
@@ -85,7 +94,7 @@ app.use(
   }),
 );
 
-app.listen(4000, () => {
+httpServer.listen(4000, () => {
   console.log("Server is listening on port 4000");
 });
 

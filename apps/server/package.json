@@ -27,6 +27,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
     "@trpc/server": "^10.45.2",
+    "@types/ws": "^8.5.13",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -36,6 +37,7 @@
     "openai": "^4.73.1",
     "postgres": "^3.4.5",
     "uuid": "^11.0.3",
+    "ws": "^8.18.0",
     "zod": "^3.23.8"
   }
 }

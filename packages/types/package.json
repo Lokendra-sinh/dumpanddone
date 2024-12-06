@@ -4,7 +4,7 @@
   "description": "",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["src/**/*"],
+  "files": ["src/**/*", "dist/**/*"],
   "scripts": {
     "dev": "tsx --watch src/index.ts",
     "build": "tsc",

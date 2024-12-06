@@ -7,7 +7,7 @@
   "files": ["src/**/*", "dist/**/*"],
   "scripts": {
     "dev": "tsx --watch src/index.ts",
-"build": "echo 'Starting types build...' && tsc && echo 'Types build complete'",
+"build": "echo 'Starting types build...' && tsc && ls -la dist/ && echo 'Types build complete'",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf ./dist",
     "clear-cache": "pnpm run clean"

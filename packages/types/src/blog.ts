@@ -1,3 +1,5 @@
+export {}
+
 interface TiptapDocument {
   type: "doc";
   content: Array<
@@ -88,6 +90,7 @@ interface Mark {
     target?: string;
   };
 }
+
 
 export {
   TiptapDocument,

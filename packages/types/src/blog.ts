@@ -1,4 +1,4 @@
-export {}
+
 
 interface TiptapDocument {
   type: "doc";

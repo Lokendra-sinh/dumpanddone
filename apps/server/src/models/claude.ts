@@ -1,6 +1,7 @@
 import { text } from "drizzle-orm/pg-core";
-import { anthropic, openai } from "..";
+import { anthropic, deepseekAi, openai } from "..";
 import { blogGeneratorPrompt } from "../prompts/generate-blog-instructions";
+import { OutlineSectionType } from "@dumpanddone/types";
 
 // Comprehensive JSON cleaning and validation
 const cleanAndValidateJson = (content: any): string => {
@@ -147,42 +148,134 @@ const validateTiptapStructure = (json: any): void => {
   });
 };
 
-export async function generateBlogContent(conversation: string) {
-  const prompt = blogGeneratorPrompt(conversation);
-  try {
-    // const message = await anthropic.messages.create({
-    //   model: "claude-3-5-sonnet-20241022",
-    //   max_tokens: 8192,
-    //   messages: [
-    //     {
-    //       "role": "user",
-    //       "content": blogGeneratorPrompt(prompt),
-    //     },
-    //     {
-    //       "role": "assistant",
-    //       "content": "Here is the JSON requested:\n{"
-    //   }
-    //   ],
-    // });
+// export async function generateBlogContent(chaos: string, outline: OutlineSectionType[] ) {
+//   const prompt = blogGeneratorPrompt(chaos, outline);
+//   try {
+//     const message = await anthropic.messages.create({
+//       model: "claude-3-5-sonnet-20241022",
+//       max_tokens: 8192,
+//       messages: [
+//         {
+//           "role": "user",
+//           "content": prompt,
+//         },
+//         {
+//           "role": "assistant",
+//           "content": "Here is the JSON requested:\n{"
+//       }
+//       ],
+//     });
 
-    const message = await openai.chat.completions.create({
-      messages: [{ role: "system", content: prompt }],
-      model: "deepseek-chat",
-      response_format: {
-        type: "json_object",
+//     // const message = await openai.chat.completions.create({
+//     //   messages: [{ role: "system", content: prompt }],
+//     //   model: "deepseek-chat",
+//     //   response_format: {
+//     //     type: "json_object",
+//     //   },
+//     // });
+
+//     const content = message.content[0]
+
+//     console.log("RAW CONTENT is", content);
+
+//     // if (content!. !== "text") {
+//     //   throw new Error("Unexpected content type from Claude");
+//     // }
+
+//     // Clean and validate JSON structure
+//     const cleanedJson = cleanAndValidateJson(content);
+//     const parsedContent = JSON.parse(cleanedJson);
+
+//     // Validate Tiptap-specific structure
+//     validateTiptapStructure(parsedContent);
+
+//     return parsedContent;
+//   } catch (error) {
+//     console.error("Error generating blog content:", error);
+//     throw new Error("Failed to generate blog content");
+//   }
+// }
+
+
+async function generateWithClaude(chaos: string, outline: OutlineSectionType[]) {
+  const prompt = blogGeneratorPrompt(chaos, outline);
+  const message = await anthropic.messages.create({
+    model: "claude-3-5-sonnet-20241022",
+    max_tokens: 8192,
+    messages: [
+      {
+        role: "user",
+        content: prompt,
       },
-    });
+      {
+        role: "assistant",
+        content: "Here is the JSON requested:\n{"
+      }
+    ],
+  });
 
-    const content = message.choices[0].message.content;
+  const content = message.content[0];
+  return content;
+}
 
-    console.log("RAW CONTENT is", content);
+// DeepSeek-specific blog generation
+async function generateWithDeepseek(chaos: string, outline: OutlineSectionType[]) {
+  const prompt = blogGeneratorPrompt(chaos, outline);
+  const response = await deepseekAi.chat.completions.create({
+    messages: [{ role: "system", content: prompt }],
+    model: "deepseek-chat",
+    response_format: {
+      type: "json_object",
+    },
+  });
 
-    // if (content!. !== "text") {
-    //   throw new Error("Unexpected content type from Claude");
-    // }
+  return response.choices[0].message.content;
+}
+
+// OpenAI GPT-specific blog generation
+async function generateWithGPT(chaos: string, outline: OutlineSectionType[]) {
+  const prompt = blogGeneratorPrompt(chaos, outline);
+  const response = await openai.chat.completions.create({
+    messages: [
+      { role: "system", content: "You are a specialized blog content generator that outputs only valid Tiptap JSON." },
+      { role: "user", content: prompt }
+    ],
+    model: "gpt-4o-mini",
+    response_format: { type: "json_object" },
+    temperature: 0.7,
+    max_tokens: 8000,
+  });
+
+  return response.choices[0].message.content;
+}
+
+// Main blog generation function
+export async function generateBlogContent(
+  chaos: string, 
+  outline: OutlineSectionType[],
+  model: "claude" | "deepseek" | "gpt" = "claude"
+) {
+  try {
+    // Generate content based on selected model
+    let rawContent;
+    switch (model) {
+      case "claude":
+        rawContent = await generateWithClaude(chaos, outline);
+        break;
+      case "deepseek":
+        rawContent = await generateWithDeepseek(chaos, outline);
+        break;
+      case "gpt":
+        rawContent = await generateWithGPT(chaos, outline);
+        break;
+      default:
+        throw new Error(`Unsupported model: ${model}`);
+    }
+
+    console.log("RAW CONTENT is", rawContent);
 
     // Clean and validate JSON structure
-    const cleanedJson = cleanAndValidateJson(content);
+    const cleanedJson = cleanAndValidateJson(rawContent);
     const parsedContent = JSON.parse(cleanedJson);
 
     // Validate Tiptap-specific structure
@@ -191,12 +284,7 @@ export async function generateBlogContent(conversation: string) {
     return parsedContent;
   } catch (error) {
     console.error("Error generating blog content:", error);
-    throw new Error("Failed to generate blog content");
+    throw new Error(`Failed to generate blog content with ${model}: ${error}`);
   }
 }
 
-// Export validation functions for testing
-// export const _test = {
-//   cleanAndValidateJson,
-//   validateTiptapStructure
-// };

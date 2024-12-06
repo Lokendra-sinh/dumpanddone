@@ -1,7 +1,8 @@
+import { UserSchema } from "@dumpanddone/types"
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { authProcedure } from "../trpc/initTRPC";
-import { getUserByEmail } from "../db/queries/findUser";
+import { getUserByEmail } from "../db/queries/queryUser";
 import { addUser } from "../db/queries/addUser";
 import { generateJwtToken } from "../utils/generate-jwt-token";
 import { COOKIE_CONFIG } from "../utils/cookies";
@@ -13,7 +14,7 @@ const GithubAccessTokenResponseSchema = z.object({
 });
 
 const GithubUserResponseSchema = z.object({
-  id: z.number(),
+  id: z.string(),
   login: z.string(),
   name: z.string().nullable(),
   email: z.string().nullable(),
@@ -21,17 +22,8 @@ const GithubUserResponseSchema = z.object({
   created_at: z.string(),
 });
 
-const UserSchema = z.object({
-  name: z.string(),
-  email: z.string(),
-  avatar: z.string(),
-  created_at: z.date(),
-  auth_method: z.union([
-    z.literal("google"),
-    z.literal("github"),
-    z.literal("email"),
-  ]),
-});
+
+const NormalizeUserSchema = UserSchema.omit({id: true})
 
 const LoginResponseSchema = z.object({
   status: z.literal("success"),
@@ -42,9 +34,6 @@ const GithubLoginInputSchema = z.object({
   accessCode: z.string().min(1, "Access code is required"),
 });
 
-type GithubAccessTokenResponse = z.infer<
-  typeof GithubAccessTokenResponseSchema
->;
 type GithubUserResponse = z.infer<typeof GithubUserResponseSchema>;
 type LoginResponseType = z.infer<typeof LoginResponseSchema>;
 
@@ -115,7 +104,7 @@ async function fetchUserDataFromGithub(
 
 function normalizeGithubUser(
   githubUser: GithubUserResponse,
-): z.infer<typeof UserSchema> {
+): z.infer<typeof NormalizeUserSchema> {
   if (!githubUser.email) {
     throw new TRPCError({
       code: "BAD_REQUEST",
@@ -155,6 +144,7 @@ export const githubLogin = authProcedure
       return {
         status: "success",
         user: {
+          id: user.id,
           name: user.name!,
           avatar: user.avatar!,
           email: user.email,

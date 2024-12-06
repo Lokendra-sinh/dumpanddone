@@ -4,12 +4,17 @@ import z from "zod";
 import { generateBlogContent } from "../models/claude";
 import { generatedBlogSchema } from "../types/blog";
 import { db } from "../db";
-import { users } from "../db/schema";
+import { blogs, users } from "../db/schema";
+import { OutlineSectionSchema } from "@dumpanddone/types";
+import { and, eq } from "drizzle-orm";
 // import { addBlog } from "../db/queries/addBlog";
 
+
 const GenerateBlogInputSchema = z.object({
-  content: z.string().min(1),
-  model: z.enum(["claude", "deepseek"]),
+  model: z.enum(["claude", "deepseek", "gpt"]),
+  outline: z.array(OutlineSectionSchema),
+  userId: z.string(),
+  blogId: z.string(),
 });
 
 const GeneratedBlogOutputSchema = z.object({
@@ -31,17 +36,34 @@ export const GeneratedBlogResponseSchema = z.discriminatedUnion("status", [
 export const generateBlog = protectedProcedure
   .input(GenerateBlogInputSchema)
   .mutation(async ({ ctx, input }) => {
-    const { content, model } = input;
-    if (!content) {
+    console.log("INSIDE GENERATE BLOGGGGGGGGGGGG");
+    const { userId,blogId, outline, model } = input;
+    if (!userId) {
       throw new TRPCError({
         code: "PARSE_ERROR",
-        message: "Cannot generate a blog without content",
+        message: "Cannot find the user ID",
       });
     }
 
+    if(!blogId){
+      throw new TRPCError({
+        code: "PARSE_ERROR",
+        message: "Blog ID cannot be empty",
+      })
+    }
+
+    const blogData = await db.select().from(blogs).where(and(
+        eq(blogs.user_id, userId),
+        eq(blogs.id, blogId)
+      )
+    ).limit(1)
+
+    const chaos = blogData[0]?.chaos as string
+
     try {
       console.log("Generating blog data");
-      const blogData = await generateBlogContent(content);
+
+      const blogData = await generateBlogContent(chaos, outline);
       console.log("RESPONSE is", blogData);
 
       // const blogDb = await addBlog({

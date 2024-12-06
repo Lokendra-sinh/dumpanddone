@@ -1,28 +1,80 @@
-export const blogGeneratorPrompt = (conversation: string) => {
-  return `You are an expert blog content structurer and Tiptap JSON generator. Your task is to transform the following conversation or raw notes into an engaging, well-structured blog post while maintaining reader interest through varied content presentation.
+import { OutlineSectionType } from "@dumpanddone/types";
+type ModelType = "claude" | "deepseek" | "gpt";
 
-  Here is the conversation or raw notes to work with:
+const MODEL_CONFIGS = {
+  claude: {
+    maxTokens: 8192,
+    targetTokens: 7000, // Leave some buffer for safety
+  },
+  deepseek: {
+    maxTokens: 4000,
+    targetTokens: 3500,
+  },
+  gpt: {
+    maxTokens: 4000,
+    targetTokens: 3500,
+  },
+} as const;
+
+export const blogGeneratorPrompt = (
+  chaos: string,
+  outline: OutlineSectionType[],
+  model: ModelType = "claude"
+) => {
+  const { targetTokens } = MODEL_CONFIGS[model];
+  const avgTokensPerSection = Math.floor(targetTokens / (outline.length + 3));
+
+  return `You are an expert blog content structurer and Tiptap JSON generator. Your task is to transform the raw notes into an engaging, well-structured blog post following a predefined outline while maintaining reader interest through varied content presentation.
+
+  TOKEN MANAGEMENT RULES:
+  1. Your total response must not exceed ${targetTokens} tokens
+  2. Allocate approximately ${avgTokensPerSection} tokens per section
+  3. High priority sections can use up to 50% more tokens
+  4. Title, author, and read time should use minimal tokens
+  5. If content needs to be trimmed, preserve the most important points
   
-  <conversation>
-  ${conversation}
-  </conversation>
+  Here is the raw content to work with:
   
-  Before generating the final output, please analyze the content and plan your approach by addressing the following points.
+  <chaos>
+  ${chaos}
+  </chaos>
+
+  Here is the outline to follow:
+  <outline>
+  ${outline
+    .map(
+      (section) => `
+    Section Title: ${section.title}
+    Section Description: ${section.description}
+    Priority: ${section.isEdited ? "HIGH" : "NORMAL"}
+  `
+    )
+    .join("\n")}
+  </outline>
+
+  Key Instructions:
+  1. Follow the outline structure precisely. Each section title should become an h2 heading in the final blog.
+  2. For sections marked with HIGH priority (isEdited: true), provide more detailed content, examples, and in-depth analysis.
+  3. Use the section descriptions as guidelines for what content to include in each section.
+  4. Maintain a logical flow between sections while ensuring each section aligns with its outline description.
+  5. For each section, incorporate:
+     - Relevant content from the chaos text
+     - Examples and elaborations that support the section's description
+     - Appropriate formatting (lists, quotes, code blocks) based on the content type
+  
+  Before generating the final output, thouroughly analyze the content and plan your approach by addressing the following points.
 
   Remember: You do not have to generate anything for the planning and research. The end RESULT is always going to be a valid JSON data.
   
   1. Extract and quote 3-5 key phrases or sentences from the conversation that will form the basis of the blog post.
-  2. Identify the main topic and key points from the conversation.
-  3. Brainstorm 3-5 potential titles for the blog post.
-  4. Outline a detailed structure for the blog post, including sections and subsections. For each section, briefly describe the content you plan to include.
-  5. List specific examples of content variety elements you plan to use (e.g., lists, quotes, code examples) and where you might include them.
-  6. Consider the target audience for this blog post. How will you tailor the content to appeal to them?
-  7. Discuss how you plan to enhance the content and improve its depth while maintaining a neutral tone.
+  2. List specific examples of content variety elements you plan to use (e.g., lists, quotes, code examples) and where you might include them.
+  3. Consider the target audience for this blog post. How will you tailor the content to appeal to them?
+  4. Enhance the content and improve its depth while maintaining a neutral tone.
   
   
-  Now, generate a Tiptap-compatible JSON structure for the blog post, following these guidelines.
+  Now, generate a Tiptap-compatible JSON structure for the blog post, following below guidelines and above outline.
 
-  DO NOT GENERATE AN INVALID JSON DATA
+  DO NOT GENERATE AN INVALID JSON DATA. MAKE SURE TO USE COMPLETE DATA FROM CHAOS WHILE GENERATING THE CONTEN FOR EACH SECTION!
   
   1. Content Variety:
      - Alternate between paragraphs, lists, quotes, and code examples.
@@ -39,8 +91,9 @@ export const blogGeneratorPrompt = (conversation: string) => {
      - Highlight key takeaways in blockquotes.
   
   3. Content Enhancement:
-     - Transform informal dialogue into a professional blog tone.
-     - Elaborate on key points from the conversation.
+     - For tone - Maintain natural user tone same as we have in the chaos.
+     - Make use of the entire content in the chaos and only ignore irrelevant parts.
+     - Elaborate on key points from the chaos.
      - Add relevant examples and explanations.
      - Use formatting (bold, italic) to emphasize important points.
      - Include links to reference materials when mentioned.
@@ -114,7 +167,9 @@ export const blogGeneratorPrompt = (conversation: string) => {
   - ListItems contain only paragraph nodes.
   - There are no empty content arrays.
   - There are no null or undefined values.
-  - There are no trailing commas.
+  - There are no trailing comma.
+
+  NOTE: Maintain the user tone as analyzed form the chaos and make use of the entire chaos content for blog generation.
   
   Now, generate the Tiptap-compatible JSON structure for the blog post based on the conversation provided and your analysis.`;
 };

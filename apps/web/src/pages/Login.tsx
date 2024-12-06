@@ -38,7 +38,7 @@ export function Login() {
 
   const googleLoginMutation = trpc.googleLogin.useMutation({
     onSuccess: (res) => {
-      setUser(res.user);
+      setUser({...res.user});
       // localStorage.setItem('dumpanddone-token', res.)
       navigate({
         to: "/dashboard",

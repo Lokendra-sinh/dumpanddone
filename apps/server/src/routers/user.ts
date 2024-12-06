@@ -7,23 +7,13 @@ import { TRPCError } from "@trpc/server";
 import z from "zod";
 import { addUser } from "../db/queries/addUser";
 import { generateJwtToken } from "../utils/generate-jwt-token";
-import { getUser, getUserByEmail } from "../db/queries/findUser";
+import { getUser, getUserByEmail } from "../db/queries/queryUser";
+import { UserSchema } from "@dumpanddone/types";
 
 const LoginSchema = z.object({
   accessToken: z.string(),
 });
 
-const UserSchema = z.object({
-  name: z.string(),
-  email: z.string(),
-  avatar: z.string(),
-  created_at: z.date(),
-  auth_method: z.union([
-    z.literal("google"),
-    z.literal("github"),
-    z.literal("email"),
-  ]),
-});
 
 export const LoginResponseSchema = z.object({
   status: z.string(),
@@ -97,6 +87,7 @@ export const googleLogin = authProcedure
       return {
         status: "success",
         user: {
+          id: user.id,
           name: user.name!,
           avatar: user.avatar!,
           email: user.email,

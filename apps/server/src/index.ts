@@ -23,10 +23,17 @@ export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-export const openai = new OpenAI({
+export const deepseekAi = new OpenAI({
   baseURL: "https://api.deepseek.com",
-  apiKey: process.env.DEEPSEEK_AI_KEY,
+  apiKey: process.env.DEEPSEEK_API_KEY,
 });
+
+
+export const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+
 
 const appRouter = router({
   generateBlog: generateBlog,

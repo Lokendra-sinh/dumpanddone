@@ -13,6 +13,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "db:generate": "pnpm --filter @dumpanddone/server run db:generate",
     "db:migrate": "pnpm --filter @dumpanddone/server run db:migrate",
+    "db:push": "pnpm --filter @dumpanddone/server run db:push",
     "server:add": "pnpm --filter @dumpanddone/server add",
     "server:remove": "pnpm --filter @dumpanddone/server remove",
     "web:add": "pnpm --filter @dumpanddone/web add",

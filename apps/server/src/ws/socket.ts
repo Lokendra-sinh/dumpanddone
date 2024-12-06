@@ -1,23 +1,33 @@
+import { v4 as uuidv4 } from 'uuid'
 import { WebSocket, WebSocketServer } from "ws";
 import { startOutlineStreaming } from "../models/outine-streaming";
+import { addChaos } from "../db/queries/addContent";
+
+export interface ModifiedWebSocketInstanceType extends WebSocket{
+    blogId: string,
+}
 
 export function setupWebSocketHandlers(wss: WebSocketServer) {
     console.log("Setting up WebSocket handlers...");
 
-    wss.on('connection', (ws: WebSocket) => {
+    wss.on('connection', (ws: ModifiedWebSocketInstanceType) => {
         console.log("Client connected to websocket");
 
         // Handle incoming messages
-        ws.on('message', (content: string) => {
+        ws.on('message', (message: string) => {
             try {
-                console.log('Received:', content);
+                console.log('Received:', message);
                 // Parse the message (assuming JSON)
-                const parsedMessage = JSON.parse(content.toString());
+                const parsedMessage = JSON.parse(message.toString());
                 
                 // Handle different message types
                 switch (parsedMessage.type) {
                     case 'START_STREAM':
-                        startOutlineStreaming(parsedMessage.content, ws)
+                        const blogId = uuidv4()
+                        ws.blogId = blogId
+                        addChaos(parsedMessage.chaos, parsedMessage.userId, blogId)
+                        startOutlineStreaming(parsedMessage.chaos, ws)
+
                         break;
                     case 'STOP_STREAM':
                         // Handle stream stop

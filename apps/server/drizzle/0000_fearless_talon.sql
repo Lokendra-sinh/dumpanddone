@@ -3,7 +3,9 @@ CREATE TABLE IF NOT EXISTS "blogs" (
 	"user_id" uuid NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"last_updated" timestamp with time zone DEFAULT now() NOT NULL,
-	"content" jsonb NOT NULL
+	"chaos" jsonb NOT NULL,
+	"outline" jsonb NOT NULL,
+	"blog" jsonb NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "users" (
@@ -13,7 +15,7 @@ CREATE TABLE IF NOT EXISTS "users" (
 	"avatar" text,
 	"password" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"auth_method" "auth_method" NOT NULL,
+	"auth_method" text NOT NULL,
 	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint

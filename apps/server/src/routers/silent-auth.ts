@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { publicProcedure } from "../trpc/initTRPC";
-import { getUser } from "../db/queries/findUser";
+import { getUser } from "../db/queries/queryUser";
 import { LoginResponseSchema, LoginResponseSchemaType } from "./user";
 
 export const silentAuth = publicProcedure
@@ -25,6 +25,7 @@ export const silentAuth = publicProcedure
     return {
       status: "success",
       user: {
+        id: user.id,
         name: user.name!,
         avatar: user.avatar!,
         email: user.email,

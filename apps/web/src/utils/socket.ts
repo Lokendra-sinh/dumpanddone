@@ -1,35 +1,49 @@
+import { useBlogsStore } from "@/store/useBlogsStore";
+import { OutlineSectionType } from "@dumpanddone/types";
+
 interface SendMessageProps {
-  type: "START_STREAM" | "STOP_STREAM",
-  content: string
+  type: "START_STREAM" | "STOP_STREAM";
+  chaos: string;
+  userId: string;
 }
 
-type CurrentStateType = "BUILDING_TAG" | "CLOSING_TAG" | "COLLECTING"
+// type WebSocketOutlineMessage =
+//   | { type: "OUTLINE_START"; blogId: string }
+//   | { type: "OUTLINE_COMPLETE"; blogId: string }
+//   | { content: string }
 
-type CollectStateType = "TITLE" | "DESCRIPTION"
+type CurrentStateType = "BUILDING_TAG" | "CLOSING_TAG" | "COLLECTING";
 
-export type SectionType = {
-  title: string
-  description: string
-}
+type CollectStateType = "TITLE" | "DESCRIPTION";
 
-type OutlineType = SectionType[]
+type OutlineType = OutlineSectionType[];
 
 class SocketClient {
   private socket: WebSocket | null = null;
   private readonly url: string;
-  buffer: string = ""
-  currentState: CurrentStateType = "BUILDING_TAG"
-  collectState: CollectStateType = "TITLE"
-  section: SectionType = {title: "", description: ""}
-  outline: OutlineType = []
-  private listeners: ((callback: SectionType) => void)[] = []
+  buffer: string = "";
+  currentState: CurrentStateType = "BUILDING_TAG";
+  collectState: CollectStateType = "TITLE";
+  section: OutlineSectionType = {
+    title: "",
+    description: "",
+    id: "",
+    isEdited: false,
+  };
+  outline: OutlineType = [];
+  private listeners: ((callback: OutlineSectionType) => void)[] = [];
 
-  private emitSection(section: SectionType){
-    this.listeners.forEach(listener => listener(section))
+  private emitSection(partialSection: { title: string; description: string }) {
+    const completeSection: OutlineSectionType = {
+      ...partialSection,
+      id: crypto.randomUUID(), // Generate unique ID
+      isEdited: false,
+    };
+    this.listeners.forEach((listener) => listener(completeSection));
   }
 
   constructor() {
-    this.url = 'ws://localhost:4000';
+    this.url = "ws://localhost:4000";
   }
 
   connect() {
@@ -41,51 +55,75 @@ class SocketClient {
       };
 
       this.socket.onmessage = (event) => {
-        // console.log("incoming event is", event);
+        try {
+          const parsed = JSON.parse(event.data);
 
-        for(let i = 0; i < event.data.length; i++){
-          const ch = event.data[i]
-        switch(this.currentState){
-          case "BUILDING_TAG":
-            this.buffer += ch
-            if(this.buffer.includes("<t>")){
-              this.collectState = "TITLE"
-              this.currentState = "COLLECTING"
-            } else if(this.buffer.includes("<d>")){
-              this.collectState = "DESCRIPTION"
-              this.currentState = "COLLECTING"
-            }
-            break;
-            case "COLLECTING":
-              if(ch === "<"){
-                this.buffer += ch
-                this.currentState = "CLOSING_TAG"
-              } else {
-                if(this.collectState === "TITLE"){
-                  this.section.title += ch
-                } else if(this.collectState === "DESCRIPTION"){
-                  this.section.description += ch
+          if (parsed.type === "OUTLINE_START") {
+            console.log("BLOG ID recieved from bakend is", parsed);
+            useBlogsStore
+              .getState()
+              .setActiveBlog({
+                id: parsed.blogId,
+                content: { type: "doc", content: [] },
+              });
+            return;
+          }
+
+          if (parsed.type === "OUTLINE_COMPLETE") {
+            this.emitSection({
+              title: "OUTLINE_COMPLETE",
+              description: "OUTLINE_COMPLETE",
+            });
+            return;
+          }
+        } catch {
+          for (let i = 0; i < event.data.length; i++) {
+            const ch = event.data[i];
+            switch (this.currentState) {
+              case "BUILDING_TAG":
+                this.buffer += ch;
+                if (this.buffer.includes("<t>")) {
+                  this.collectState = "TITLE";
+                  this.currentState = "COLLECTING";
+                } else if (this.buffer.includes("<d>")) {
+                  this.collectState = "DESCRIPTION";
+                  this.currentState = "COLLECTING";
                 }
-              }
-              break;
-            
-            case "CLOSING_TAG":
-              this.buffer += ch
-              if(this.buffer.includes("</t>")){
-                this.buffer = ""
-                this.currentState = "BUILDING_TAG"
-              } else if(this.buffer.includes("</d>")){
-                this.buffer = ""
-                this.currentState = "BUILDING_TAG"
-                console.log("COMPLETED SECTION:", this.section);
-                this.outline.push(this.section)
-                this.emitSection(this.section)
-                this.section = {title: "", description: ""};
-              }
-              break;
-        }
-      }
+                break;
+              case "COLLECTING":
+                if (ch === "<") {
+                  this.buffer += ch;
+                  this.currentState = "CLOSING_TAG";
+                } else {
+                  if (this.collectState === "TITLE") {
+                    this.section.title += ch;
+                  } else if (this.collectState === "DESCRIPTION") {
+                    this.section.description += ch;
+                  }
+                }
+                break;
 
+              case "CLOSING_TAG":
+                this.buffer += ch;
+                if (this.buffer.includes("</t>")) {
+                  this.buffer = "";
+                  this.currentState = "BUILDING_TAG";
+                } else if (this.buffer.includes("</d>")) {
+                  this.buffer = "";
+                  this.currentState = "BUILDING_TAG";
+                  this.outline.push(this.section);
+                  this.emitSection(this.section);
+                  this.section = {
+                    title: "",
+                    description: "",
+                    id: "",
+                    isEdited: false,
+                  };
+                }
+                break;
+            }
+          }
+        }
       };
 
       this.socket.onerror = (error) => {
@@ -101,29 +139,28 @@ class SocketClient {
         // You might want to implement reconnection logic here
       };
     } catch (e) {
-        console.error('Failed to connect to WebSocket server:', e);
+      console.error("Failed to connect to WebSocket server:", e);
     }
   }
 
-  sendMessage(message: SendMessageProps){
+  sendMessage(message: SendMessageProps) {
     if (this.socket?.readyState === WebSocket.OPEN) {
-        this.socket.send(JSON.stringify(message));
+      this.socket.send(JSON.stringify(message));
     } else {
-        console.error('WebSocket is not connected');
+      console.error("WebSocket is not connected");
     }
   }
 
-  onSection(callback: (section: SectionType) => void){
-    this.listeners.push(callback)
+  onSection(callback: (section: OutlineSectionType) => void) {
+    this.listeners.push(callback);
   }
 
-  disconnect(){
-    if(this.socket){
-        this.socket.close()
-        this.socket = null
+  disconnect() {
+    if (this.socket) {
+      this.socket.close();
+      this.socket = null;
     }
   }
 }
 
-
-export const socketClient = new SocketClient()
+export const socketClient = new SocketClient();

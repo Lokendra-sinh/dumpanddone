@@ -1,5 +1,5 @@
 {
-  "id": "67ae01d5-33bf-4ede-bf3b-651f9e907df0",
+  "id": "d44f3cdf-3be4-46c2-94ce-04348677ca1f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -35,8 +35,20 @@
           "notNull": true,
           "default": "now()"
         },
-        "content": {
-          "name": "content",
+        "chaos": {
+          "name": "chaos",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "outline": {
+          "name": "outline",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "blog": {
+          "name": "blog",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true
@@ -108,8 +120,7 @@
         },
         "auth_method": {
           "name": "auth_method",
-          "type": "auth_method",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         }

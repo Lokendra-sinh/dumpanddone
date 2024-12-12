@@ -15,6 +15,7 @@ import { silentAuth } from "./routers/silent-auth";
 import { createServer } from 'http'
 import { WebSocketServer } from "ws";
 import { setupWebSocketHandlers } from "./ws/socket";
+import { updateBlog } from "./routers/update-blog";
 
 
 dotenv.config();
@@ -37,6 +38,7 @@ export const openai = new OpenAI({
 
 const appRouter = router({
   generateBlog: generateBlog,
+  updateBlog: updateBlog,
   googleLogin: googleLogin,
   githubLogin: githubLogin,
   silentAuth: silentAuth,

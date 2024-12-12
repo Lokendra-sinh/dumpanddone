@@ -4,32 +4,9 @@ import {
   CardContent,
   CardDescription,
   CardTitle,
-  useToast,
 } from "@dumpanddone/ui";
 import { useEffect } from "react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from "@dumpanddone/ui";
-import {
-  Sparkles,
-  Image as ImageIcon,
-  Hash,
-  List,
-  ListOrdered,
-  CheckSquare,
-  ToggleLeft,
-  Quote,
-  Code2,
-  TableIcon,
-  ImageIcon as ImageIcon2,
-  ColumnsIcon,
-  Minus,
-  FileText,
   Bold,
   Italic,
   Strikethrough,
@@ -37,29 +14,74 @@ import {
   Heading2,
   Heading3,
 } from "lucide-react";
-import { commandsMap } from "@/utils/commandsMap";
 import { CHARACTER_LIMIT } from "@/utils/constants";
 import { usePlayground } from "@/providers/playground-provider";
+import { EditorFormattingOptionsDropdown } from "./editor-formatting-options";
 
 export const Playground = () => {
-  const { editor, isDropdownOpen, setIsDropdownOpen } = usePlayground();
+  const {
+    editor,
+    setSelectionInfo,
+    setCoords,
+  } = usePlayground();
 
   useEffect(() => {
-    const handleClickOutside = () => {
-      setIsDropdownOpen(false);
+    if (!editor) return;
+
+    const handleSelectionUpdate = () => {
+      const { state } = editor;
+      const { selection } = state;
+      const { empty, $from, $to } = selection;
+
+      if (empty) {
+        setSelectionInfo(null);
+        setCoords({ top: 0, left: 0 });
+        return;
+      }
+
+      const fromCoords = editor.view.coordsAtPos($from.pos);
+      const toCoords = editor.view.coordsAtPos($to.pos);
+      const bottomMostCoord = Math.max(fromCoords.bottom, toCoords.bottom);
+
+      setCoords({
+        left: Math.max(fromCoords.left, toCoords.left),
+        top: bottomMostCoord + 5,
+      });
+
+      // Get the selected text (plain text, if needed)
+      const selectedText = editor.state.doc.textBetween($from.pos, $to.pos);
+
+      // Get all nodes within the selection range as a fragment
+      const fragment = selection.content();
+      // Convert the selected fragment to a JSON representation
+      const selectedNodes = fragment.toJSON();
+
+      delete selectedNodes.openStart;
+      delete selectedNodes.openEnd;
+
+      // Set selection info with node types, attributes, marks, etc.
+      setSelectionInfo({
+        nodes: selectedNodes,
+        selectedText,
+        selectionBoundaries: { from: $from.pos, to: $to.pos },
+      });
+
+      editor.commands.focus();
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    editor.on("selectionUpdate", handleSelectionUpdate);
+
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      editor.off("selectionUpdate", handleSelectionUpdate);
     };
-  }, [isDropdownOpen, setIsDropdownOpen]);
+  }, [editor, setCoords, setSelectionInfo]);
+
 
   if (!editor) return null;
 
   const percentage = editor
     ? Math.round(
-        (100 / CHARACTER_LIMIT) * editor.storage.characterCount.characters(),
+        (100 / CHARACTER_LIMIT) * editor.storage.characterCount.characters()
       )
     : 0;
 
@@ -95,17 +117,18 @@ export const Playground = () => {
           </div>
         </div>
       </div>
-      <CardContent className="w-full overflow-auto">
-        <div className="w-full overflow-auto outline-none relative">
+      <CardContent className="w-full flex-grow overflow-auto">
+        <div className="w-full h-full flex overflow-auto outline-none relative">
           {" "}
-          <BubbleMenuOptions />
-          <EditorContent editor={editor} />
-          <OptionsDropdown />
+          {/* <BubbleMenuOptions /> */}
+          <EditorContent key="firstEditor" editor={editor} className="w-full h-full" />
+          <EditorFormattingOptionsDropdown />
         </div>
       </CardContent>
     </div>
   );
 };
+
 
 export default Playground;
 
@@ -213,170 +236,5 @@ export const BubbleMenuOptions = () => {
         </Button>
       </div>
     </BubbleMenu>
-  );
-};
-
-export const OptionsDropdown = () => {
-  const { editor, isDropdownOpen, setIsDropdownOpen, coords } = usePlayground();
-  const { toast } = useToast();
-
-  const handleMenuItemClick = (event: string) => {
-    if (!editor) return;
-
-    const command = commandsMap.get(event);
-    if (command) {
-      const success = command(editor);
-      if (!success) {
-        toast({
-          variant: "default",
-          title: "Failed to execute the command",
-        });
-        return;
-      }
-      setIsDropdownOpen(false);
-      editor.commands.focus();
-    }
-  };
-
-  return (
-    <div className="dropdown-menu">
-      <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-        <DropdownMenuTrigger asChild>
-          <button className="hidden">Insert...</button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          style={{
-            position: "absolute",
-            left: coords?.left ?? 0,
-            top: coords?.top ?? 0,
-          }}
-          className="w-72 h-[400px] overflow-auto bg-background text-foreground border shadow-lg rounded-md"
-        >
-          <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
-            AI
-          </DropdownMenuLabel>
-          <DropdownMenuItem className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4" />
-            <span>AI Writer</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="flex items-center gap-2">
-            <ImageIcon className="w-4 h-4" />
-            <span>AI Image</span>
-          </DropdownMenuItem>
-
-          <DropdownMenuSeparator />
-
-          <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
-            FORMAT
-          </DropdownMenuLabel>
-          <DropdownMenuItem
-            className="flex items-center gap-2"
-            onSelect={() => handleMenuItemClick("h1")}
-          >
-            <Hash className="w-4 h-4" />
-            <span>Heading 1</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="flex items-center gap-2"
-            onSelect={() => handleMenuItemClick("h2")}
-          >
-            <Hash className="w-4 h-4" />
-            <span>Heading 2</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="flex items-center gap-2"
-            onSelect={() => handleMenuItemClick("h3")}
-          >
-            <Hash className="w-4 h-4" />
-            <span>Heading 3</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="flex items-center gap-2"
-            onSelect={() => handleMenuItemClick("bullet")}
-          >
-            <List className="w-4 h-4" />
-            <span>Bullet List</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="flex items-center gap-2"
-            onSelect={() => handleMenuItemClick("ordered")}
-          >
-            <ListOrdered className="w-4 h-4" />
-            <span>Numbered List</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="flex items-center gap-2"
-            onSelect={() => handleMenuItemClick("task")}
-          >
-            <CheckSquare className="w-4 h-4" />
-            <span>Task List</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="flex items-center gap-2">
-            <ToggleLeft className="w-4 h-4" />
-            <span>Toggle List</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="flex items-center gap-2"
-            onSelect={() => handleMenuItemClick("blockquote")}
-          >
-            <Quote className="w-4 h-4" />
-            <span>Blockquote</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="flex items-center gap-2"
-            onSelect={() => handleMenuItemClick("codeBlock")}
-          >
-            <Code2 className="w-4 h-4" />
-            <span>Code Block</span>
-          </DropdownMenuItem>
-
-          <DropdownMenuSeparator />
-
-          <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
-            INSERT
-          </DropdownMenuLabel>
-
-          <DropdownMenuItem
-            className="flex items-center gap-2"
-            onSelect={() => handleMenuItemClick("table")}
-          >
-            <TableIcon className="w-4 h-4" />
-            <span>Table</span>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            className="flex items-center gap-2"
-            onSelect={() => handleMenuItemClick("image")}
-          >
-            <ImageIcon2 className="w-4 h-4" />
-            <span>Image</span>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            className="flex items-center gap-2"
-            onSelect={() => handleMenuItemClick("columns")}
-          >
-            <ColumnsIcon className="w-4 h-4" />
-            <span>Columns</span>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            className="flex items-center gap-2"
-            onSelect={() => handleMenuItemClick("horizontalRule")}
-          >
-            <Minus className="w-4 h-4" />
-            <span>Horizontal Rule</span>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            className="flex items-center gap-2"
-            onSelect={() => handleMenuItemClick("tableOfContents")}
-          >
-            <FileText className="w-4 h-4" />
-            <span>Table of Contents</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
   );
 };

@@ -63,7 +63,7 @@ export const generateBlog = protectedProcedure
     try {
       console.log("Generating blog data");
 
-      const blogData = await generateBlogContent(chaos, outline);
+      const blogData = await generateBlogContent(chaos, outline, model);
       console.log("RESPONSE is", blogData);
 
       // const blogDb = await addBlog({

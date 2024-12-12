@@ -2,17 +2,20 @@
 
 interface TiptapDocument {
   type: "doc";
-  content: Array<
-    | ParagraphNode
-    | HeadingNode
-    | BulletListNode
-    | OrderedListNode
-    | CodeBlockNode
-    | BlockquoteNode
-    | ImageNode
-  >;
+  content: TipTapContentType
 }
 
+type TipTapNodeType = ParagraphNode | HeadingNode | BulletListNode | OrderedListNode | CodeBlockNode | BlockquoteNode | ImageNode
+
+type TipTapContentType = Array<
+| ParagraphNode
+| HeadingNode
+| BulletListNode
+| OrderedListNode
+| CodeBlockNode
+| BlockquoteNode
+| ImageNode
+>
 interface ParagraphNode {
   type: "paragraph";
   attrs?: {
@@ -94,6 +97,8 @@ interface Mark {
 
 export {
   TiptapDocument,
+  TipTapContentType,
+  TipTapNodeType,
   ParagraphNode,
   HardBreakNode,
   HeadingNode,

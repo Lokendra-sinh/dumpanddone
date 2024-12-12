@@ -50,6 +50,8 @@
     "formik": "^2.4.6",
     "lowlight": "^3.1.0",
     "lucide-react": "^0.456.0",
+    "pm2html": "^0.1.12",
+    "prosemirror-model": "^1.24.1",
     "prosemirror-view": "^1.37.0",
     "react": "^18.3.1",
     "react-day-picker": "8.10.1",

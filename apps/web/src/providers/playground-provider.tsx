@@ -1,12 +1,21 @@
-// playground-provider.tsx
 import { createContext, useContext, useState } from "react";
-import { Editor } from "@tiptap/react";
+import { Editor } from "@tiptap/react"
 import { ReactNode } from "@tanstack/react-router";
 import { useEditorInstance } from "@/hooks/useEditorInstance";
 import { useEditorConfig } from "@/hooks/useEditorConfig";
 import { useDashboard } from "./dashboard-provider";
+import { TipTapContentType } from "@dumpanddone/types";
 
-type Coordinates = { top: number; left: number } | null;
+type Coordinates = { top: number; left: number }
+
+export interface SelectionInfo {
+  nodes: TipTapContentType;
+  selectedText: string;
+  selectionBoundaries: {
+    from: number;
+    to: number;
+  };
+}
 
 interface PlaygroundContextType {
   editor: Editor | null;
@@ -15,19 +24,19 @@ interface PlaygroundContextType {
   coords: Coordinates;
   setCoords: (coords: Coordinates) => void;
   resetDropdownState: () => void;
+  selectionInfo: SelectionInfo | null;
+  setSelectionInfo: (info: SelectionInfo | null) => void;
 }
 
-export const PlaygroundContext = createContext<PlaygroundContextType | null>(
-  null,
-);
+export const PlaygroundContext = createContext<PlaygroundContextType | null>(null);
 
 export const PlaygroundProvider = ({ children }: { children: ReactNode }) => {
   const { blogData } = useDashboard();
   const config = useEditorConfig();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [coords, setCoords] = useState<Coordinates>(null);
+  const [coords, setCoords] = useState<Coordinates>({top: 0, left: 0});
+  const [selectionInfo, setSelectionInfo] = useState<SelectionInfo | null>(null);
 
-  // Initialize editor with handlers that update shared state
   const editor = useEditorInstance({
     config,
     content: blogData,
@@ -50,7 +59,7 @@ export const PlaygroundProvider = ({ children }: { children: ReactNode }) => {
 
   const resetDropdownState = () => {
     setIsDropdownOpen(false);
-    setCoords(null);
+    setCoords({top: 0, left: 0});
   };
 
   const value: PlaygroundContextType = {
@@ -60,6 +69,8 @@ export const PlaygroundProvider = ({ children }: { children: ReactNode }) => {
     coords,
     setCoords,
     resetDropdownState,
+    selectionInfo,
+    setSelectionInfo
   };
 
   return (
@@ -70,9 +81,9 @@ export const PlaygroundProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export const usePlayground = () => {
-  const playgroundContext = useContext(PlaygroundContext);
-  if (!playgroundContext) {
+  const context = useContext(PlaygroundContext);
+  if (!context) {
     throw new Error("usePlayground must be used within a PlaygroundProvider");
   }
-  return playgroundContext;
+  return context;
 };

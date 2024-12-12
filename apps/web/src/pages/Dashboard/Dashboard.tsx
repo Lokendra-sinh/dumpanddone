@@ -17,6 +17,10 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
 } from "@dumpanddone/ui";
 import { Upload, Palette, FileDown, Loader2 } from "lucide-react";
 import { trpc } from "../../utils/trpc";
@@ -72,6 +76,10 @@ export const Dashboard = () => {
     generateBlogMutation.mutate({model: selectedModel, outline: sections, userId: user.id!, blogId: activeBlog.id!})
   }
 
+  const handleExport = (format: string) => {
+console.log("format is", format);
+  }
+
   useEffect(() => {
     socketClient.onSection((section) => {
       if (!tabsAlreadySwitched.current) {
@@ -85,7 +93,7 @@ export const Dashboard = () => {
       }
   
       const isDuplicateSection = sections.find(
-        s => s.title === section.title && s.description === section.description
+        s => s.title === section.title || s.description === section.description
       );
       console.log("SECTION is", section);
       if (isDuplicateSection) return;
@@ -131,20 +139,22 @@ export const Dashboard = () => {
                 </TabsList>
                 {activeTab === "playground" && (
                   <div className="flex-1 flex justify-end space-x-4">
-                    <Button
-                      variant="outline"
-                      className="bg-background text-foreground"
-                    >
-                      <FileDown className="mr-2 h-4 w-4" />
-                      Export as HTML
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="bg-background text-foreground"
-                    >
-                      <FileDown className="mr-2 h-4 w-4" />
-                      Export as PDF
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="bg-background text-foreground">
+                          <FileDown className="mr-2 h-4 w-4" />
+                          Export
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onSelect={() => handleExport('html')}>
+                          Export as HTML
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleExport('pdf')}>
+                          Export as PDF
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 )}
               </div>

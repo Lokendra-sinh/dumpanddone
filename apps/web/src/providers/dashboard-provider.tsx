@@ -1,21 +1,35 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { ReactNode } from "@tanstack/react-router";
-import { TiptapDocument } from "../types/tiptap-blog";
 import { socketClient } from "@/utils/socket";
-
+import { ModelsType, TiptapDocument } from "@dumpanddone/types";
 
 interface DashboardContextType {
-  blogData: TiptapDocument | undefined;
-  setBlogData: React.Dispatch<React.SetStateAction<TiptapDocument | undefined>>;
+  blogData: TiptapDocument;
+  setBlogData: (data: TiptapDocument | ((prev: TiptapDocument) => TiptapDocument)) => void;
+  selectedModel: ModelsType;
+  setSelectedModel: (model: ModelsType) => void;
 }
 
 interface DashboardProviderProps {
   children: ReactNode;
 }
 
+const initialBlogData: TiptapDocument = {
+  type: "doc",
+  content: [{
+    type: "paragraph",
+    content: [{
+      type: "text",
+      text: ""
+    }]
+  }]
+};
+
 const initialContext: DashboardContextType = {
-  blogData: undefined,
+  blogData: initialBlogData,
   setBlogData: () => undefined,
+  selectedModel: "claude",
+  setSelectedModel: () => undefined
 };
 
 const DashboardContext = createContext<DashboardContextType>(initialContext);
@@ -23,20 +37,26 @@ const DashboardContext = createContext<DashboardContextType>(initialContext);
 export const DashboardProvider: React.FC<DashboardProviderProps> = ({
   children,
 }) => {
-  const [blogData, setBlogData] = useState<TiptapDocument | undefined>(
-    undefined,
-  );
+  const [blogData, setBlogData] = useState<TiptapDocument>(initialBlogData);
+  const [selectedModel, setSelectedModel] = useState<ModelsType>("claude");
 
   useEffect(() => {
-    socketClient.connect()
+    socketClient.connect();
 
     return () => {
-      socketClient.disconnect()
-    }
-  },[])
+      socketClient.disconnect();
+    };
+  }, []);
 
   return (
-    <DashboardContext.Provider value={{ blogData, setBlogData }}>
+    <DashboardContext.Provider 
+      value={{ 
+        blogData, 
+        setBlogData, 
+        selectedModel, 
+        setSelectedModel 
+      }}
+    >
       {children}
     </DashboardContext.Provider>
   );

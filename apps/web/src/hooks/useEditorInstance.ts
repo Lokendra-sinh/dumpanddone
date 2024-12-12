@@ -7,6 +7,7 @@ type EditorConfigReturn = ReturnType<typeof useEditorConfig>;
 
 export interface EditorHandlers {
   onUpdate?: ({ editor }: { editor: Editor }) => void;
+  onSelectionUpdate?: ({ editor }: { editor: Editor }) => void; 
   editorProps?: {
     handleKeyDown?: (view: EditorView, event: KeyboardEvent) => boolean | void;
   };
@@ -20,10 +21,11 @@ interface UseEditorInstanceProps {
 
 export const useEditorInstance = (props: UseEditorInstanceProps) => {
   const { config, content, handlers } = props;
+  
   return useEditor({
     ...config,
     content,
-    onUpdate: handlers.onUpdate,
+    onSelectionUpdate: handlers.onSelectionUpdate,
     editorProps: {
       ...config.editorProps,
       ...handlers.editorProps,

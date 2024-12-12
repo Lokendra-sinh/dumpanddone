@@ -1,18 +1,18 @@
 import { OutlineSectionType } from "@dumpanddone/types";
 type ModelType = "claude" | "deepseek" | "gpt";
 
-const MODEL_CONFIGS = {
+export const MODEL_CONFIGS = {
   claude: {
     maxTokens: 8192,
     targetTokens: 7000, // Leave some buffer for safety
   },
   deepseek: {
     maxTokens: 4000,
-    targetTokens: 3500,
+    targetTokens: 8000,
   },
   gpt: {
     maxTokens: 4000,
-    targetTokens: 3500,
+    targetTokens: 8000,
   },
 } as const;
 
@@ -28,7 +28,7 @@ export const blogGeneratorPrompt = (
 
   TOKEN MANAGEMENT RULES:
   1. Your total response must not exceed ${targetTokens} tokens
-  2. Allocate approximately ${avgTokensPerSection} tokens per section
+  2. Allocate approximately ${avgTokensPerSection} tokens per section but extendible if the section requires in-depth explanation.
   3. High priority sections can use up to 50% more tokens
   4. Title, author, and read time should use minimal tokens
   5. If content needs to be trimmed, preserve the most important points
@@ -170,6 +170,16 @@ export const blogGeneratorPrompt = (
   - There are no trailing comma.
 
   NOTE: Maintain the user tone as analyzed form the chaos and make use of the entire chaos content for blog generation.
+
+  If you need to limit the response, simply return fewer sections but maintain valid JSON structure.
+
+Do NOT add:
+- Notes about length
+- Explanations
+- Comments
+- Any text outside the JSON structure
+
+The response should start with { and end with } with no additional characters
   
   Now, generate the Tiptap-compatible JSON structure for the blog post based on the conversation provided and your analysis.`;
 };

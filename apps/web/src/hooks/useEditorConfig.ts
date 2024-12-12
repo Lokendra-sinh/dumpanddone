@@ -11,12 +11,14 @@ import CharacterCount from "@tiptap/extension-character-count";
 import { all, createLowlight } from "lowlight";
 import { mergeAttributes } from "@tiptap/core";
 import Link from "@tiptap/extension-link";
+import { highlight } from "@/lib/highlight-extension";
 
 const lowlight = createLowlight(all);
 
 export const useEditorConfig = () => {
   return {
     extensions: [
+      highlight,
       StarterKit.configure({
         heading: false,
         codeBlock: false,
@@ -68,7 +70,7 @@ export const useEditorConfig = () => {
         // Bullet list configuration
         bulletList: {
           HTMLAttributes: {
-            class: "list-disc px-4",
+            class: "list-disc px-4 py-2",
           },
         },
         // Paragraph configuration
@@ -92,9 +94,9 @@ export const useEditorConfig = () => {
             ? node.attrs.level
             : this.options.levels[0];
           const classes = {
-            1: "text-4xl my-8",
-            2: "text-2xl my-6",
-            3: "text-xl my-4",
+            1: "text-4xl mt-8",
+            2: "text-2xl mt-6",
+            3: "text-xl mt-4",
           };
           return [
             `h${level}`,

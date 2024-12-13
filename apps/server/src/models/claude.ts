@@ -1,4 +1,3 @@
-import { text } from "drizzle-orm/pg-core";
 import { anthropic, deepseekAi, openai } from "..";
 import { blogGeneratorPrompt } from "../prompts/generate-blog-instructions";
 import { ModelsType, OutlineSectionType } from "@dumpanddone/types";

@@ -1,5 +1,5 @@
 
-
+type ModelsType = "claude" | "gpt" | "deepseek"
 interface TiptapDocument {
   type: "doc";
   content: TipTapContentType
@@ -110,4 +110,5 @@ export {
   Mark,
   ImageNode,
   OrderedListNode,
+  ModelsType,
 };

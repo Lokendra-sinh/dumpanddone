@@ -1,4 +1,5 @@
-import { z } from "zod";
+import { ModelsType } from './blog'
+
 import {
   TiptapDocument,
   TipTapContentType,
@@ -35,13 +36,12 @@ import {
   TiptapDocumentSchema,
   OutlineSectionType,
   BlogOutlineType,
+  ModelsSchema,
 } from "./blogSchema";
 
 import { UserSchema, UserSchemaType } from "./user";
 
 
-type ModelsType = "claude" | "gpt" | "deepseek"
-const ModelsSchema = z.union([z.literal("claude"), z.literal("deepseek"), z.literal("gpt")])
 
 export {
   TiptapDocument,
@@ -79,5 +79,5 @@ export {
   ModelsSchema,
   BlogOutlineType,
   UserSchemaType,
-  ModelsType
+  ModelsType,
 };

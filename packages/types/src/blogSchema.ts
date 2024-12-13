@@ -1,6 +1,8 @@
 import z from 'zod'
 import { ListItemNode, ParagraphNode, TextContent } from './blog'
 
+export const ModelsSchema = z.union([z.literal("claude"), z.literal("deepseek"), z.literal("gpt")])
+
 export const OutlineSectionSchema = z.object({
     title: z.string(),
     description: z.string(),

@@ -1,4 +1,4 @@
-import { ModelsType } from './blog'
+
 
 import {
   TiptapDocument,
@@ -15,6 +15,7 @@ import {
   Mark,
   ImageNode,
   OrderedListNode,
+  ModelsType,
 } from "./blog";
 
 import {
@@ -41,7 +42,7 @@ import {
 
 import { UserSchema, UserSchemaType } from "./user";
 
-
+import { ModelConfigs, ModelProperties } from "./misc";
 
 export {
   TiptapDocument,
@@ -80,4 +81,6 @@ export {
   BlogOutlineType,
   UserSchemaType,
   ModelsType,
+  ModelConfigs,
+  ModelProperties,
 };

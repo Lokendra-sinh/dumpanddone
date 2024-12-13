@@ -14,7 +14,14 @@ const emptyBlog: TiptapDocument = {
     content: []
 };
 
-export async function addChaos(chaos: string, userId: string, blogId: string) {
+interface AddChaosProps {
+    chaos: string,
+    userId: string,
+    blogId: string,
+}
+
+export async function addChaos(props: AddChaosProps) {
+    const { chaos, userId, blogId } = props
     try {
 
         return await db.insert(blogs).values({

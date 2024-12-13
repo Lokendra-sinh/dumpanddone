@@ -64,13 +64,13 @@ export const useEditorConfig = () => {
         blockquote: {
           HTMLAttributes: {
             class:
-              "border-l-4 border-zinc-400 bg-zinc-100 my-6 py-2 px-4 rounded",
+              "border-l-4 border-zinc-400 bg-zinc-100 my-4 py-2 px-4 rounded",
           },
         },
         // Bullet list configuration
         bulletList: {
           HTMLAttributes: {
-            class: "list-disc px-4 py-2",
+            class: "list-disc px-4 !py-0 !my-0",
           },
         },
         // Paragraph configuration
@@ -94,9 +94,9 @@ export const useEditorConfig = () => {
             ? node.attrs.level
             : this.options.levels[0];
           const classes = {
-            1: "text-4xl mt-8",
-            2: "text-2xl mt-6",
-            3: "text-xl mt-4",
+            1: "text-5xl my-7",
+            2: "text-3xl my-7",
+            3: "text-2xl my-7",
           };
           return [
             `h${level}`,
@@ -143,7 +143,7 @@ export const useEditorConfig = () => {
       }),
       TaskItem.configure({
         HTMLAttributes: {
-          class: "flex items-start gap-2",
+          class: "flex items-start gap-2 !py-0 !my-0",
         },
         nested: true,
       }),

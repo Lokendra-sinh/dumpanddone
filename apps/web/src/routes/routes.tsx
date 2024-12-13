@@ -11,6 +11,7 @@ import { AuthRoute } from "./authenticated-route";
 import { GithubCallback } from "@/pages/GithubCallback";
 import { Root } from "@/pages/Root";
 import { useUserStore } from "@/store/useUserStore";
+import { PlaygroundIndex } from "@/pages/Dashboard/Playground/playground-index";
 
 export const RootRoute = createRootRoute({
   component: Root,
@@ -114,3 +115,33 @@ export const DashboardRoute = createRoute({
     };
   },
 });
+
+export const DashboardIndexRoute = createRoute({
+  getParentRoute: () => DashboardRoute,
+  path: "/",
+  component: lazyRouteComponent(
+    () => import("../pages/Dashboard/blogs/Blogs"),
+  ),
+});
+
+export const BlogsRoute = createRoute({
+  getParentRoute: () => DashboardRoute,
+  path: "/blogs",
+  component: lazyRouteComponent(
+    () => import("../pages/Dashboard/blogs/Blogs"),
+  ),
+  beforeLoad: () => {
+    console.log("inside blogs");
+    return {
+      title: "Blogs",
+    };
+  },
+});
+
+
+export const BlogEditorRoute = createRoute({
+  getParentRoute: () => DashboardRoute,  // Changed to DashboardRoute
+  path: "/editor/$blogId",               // Changed path to be more explicit
+  component: PlaygroundIndex,
+});
+

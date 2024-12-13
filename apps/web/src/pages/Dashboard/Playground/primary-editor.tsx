@@ -2,8 +2,6 @@ import { BubbleMenu, EditorContent } from "@tiptap/react";
 import {
   Button,
   CardContent,
-  CardDescription,
-  CardTitle,
 } from "@dumpanddone/ui";
 import { useEffect } from "react";
 import {
@@ -17,13 +15,16 @@ import {
 import { CHARACTER_LIMIT } from "@/utils/constants";
 import { usePlayground } from "@/providers/playground-provider";
 import { EditorFormattingOptionsDropdown } from "./editor-formatting-options";
+import { useBlogsStore } from "@/store/useBlogsStore";
+import { SlashCommandMenu } from "./slash-commmand-menu";
 
-export const Playground = () => {
-  const {
-    editor,
-    setSelectionInfo,
-    setCoords,
-  } = usePlayground();
+
+export const PrimaryEditor = () => {
+  console.log("inside primary");
+  const blogData = useBlogsStore(state => state.activeBlog)
+  console.log("blogDATA form editor is", blogData);
+  const { editor, setSelectionInfo, setCoords } = usePlayground();
+  
 
   useEffect(() => {
     if (!editor) return;
@@ -76,61 +77,42 @@ export const Playground = () => {
     };
   }, [editor, setCoords, setSelectionInfo]);
 
+  useEffect(() => {
+    if (editor && blogData?.content) {
+        editor.commands.setContent(blogData.content);
+    }
+}, [blogData?.content, editor]);
 
   if (!editor) return null;
 
-  const percentage = editor
-    ? Math.round(
-        (100 / CHARACTER_LIMIT) * editor.storage.characterCount.characters()
-      )
-    : 0;
 
   return (
-    <div className="w-full h-screen-minus-32 overflow-auto flex flex-col items-start">
-      <div className="w-full flex justify-between px-5 py-4">
-        <div className="w-full flex flex-col gap-2">
-          <CardTitle>Playground</CardTitle>
-          <CardDescription>Customize your blog post</CardDescription>
+    <div className="w-full h-screen-minus-32 overflow-auto flex flex-col justify-center border-none">
+      <CardContent className="w-full flex-grow overflow-auto border-none outline-none">
+        <div className="w-full h-full flex overflow-auto outline-none relative">
+          {" "}
+          {/* <BubbleMenuOptions /> */}
+          <EditorContent
+            key="firstEditor"
+            editor={editor}
+            className="w-[600px] h-full"
+          />
+          <EditorFormattingOptionsDropdown />
+          <SlashCommandMenu />
         </div>
+      </CardContent>
+      <div className="w-full flex justify-between px-5">
         <div
           className={`w-full flex justify-end character-count ${editor.storage.characterCount.characters() === CHARACTER_LIMIT ? "character-count--warning" : ""}`}
         >
-          <svg height="30" width="30" viewBox="0 0 30 30">
-            <circle r="10" cx="10" cy="10" fill="#e9ecef" />
-            <circle
-              r="5"
-              cx="10"
-              cy="10"
-              fill="transparent"
-              stroke="currentColor"
-              strokeWidth="10"
-              strokeDasharray={`calc(${percentage} * 31.4 / 100) 31.4`}
-              transform="rotate(-90) translate(-20)"
-            />
-            <circle r="6" cx="10" cy="10" fill="white" />
-          </svg>
           <div className="flex flex-col">
-            {editor.storage.characterCount.characters()} / {CHARACTER_LIMIT}{" "}
-            characters
-            <br />
             {editor.storage.characterCount.words()} words
           </div>
         </div>
       </div>
-      <CardContent className="w-full flex-grow overflow-auto">
-        <div className="w-full h-full flex overflow-auto outline-none relative">
-          {" "}
-          {/* <BubbleMenuOptions /> */}
-          <EditorContent key="firstEditor" editor={editor} className="w-full h-full" />
-          <EditorFormattingOptionsDropdown />
-        </div>
-      </CardContent>
     </div>
   );
 };
-
-
-export default Playground;
 
 export const BubbleMenuOptions = () => {
   const { editor } = usePlayground();

@@ -8,14 +8,14 @@ interface BlogType {
 
 
 interface Blog {
-    activeBlog: BlogType | null
+    activeBlog: BlogType | undefined
     blogs: BlogType[]
     setActiveBlog: (blog: BlogType) => void
     setBlogs: (blogs: BlogType[]) => void
 }
 
 export const useBlogsStore = create<Blog>((set) => ({
-    activeBlog: null,
+    activeBlog: undefined,
     blogs: [],
     setActiveBlog: (blog: BlogType) => set({activeBlog: blog}),
     setBlogs: (blogs) => set({blogs})

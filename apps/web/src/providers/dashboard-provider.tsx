@@ -1,13 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { ReactNode } from "@tanstack/react-router";
 import { socketClient } from "@/utils/socket";
-import { ModelsType, TiptapDocument } from "@dumpanddone/types";
+import {  TiptapDocument } from "@dumpanddone/types";
 
 interface DashboardContextType {
   blogData: TiptapDocument;
   setBlogData: (data: TiptapDocument | ((prev: TiptapDocument) => TiptapDocument)) => void;
-  selectedModel: ModelsType;
-  setSelectedModel: (model: ModelsType) => void;
 }
 
 interface DashboardProviderProps {
@@ -28,8 +26,6 @@ const initialBlogData: TiptapDocument = {
 const initialContext: DashboardContextType = {
   blogData: initialBlogData,
   setBlogData: () => undefined,
-  selectedModel: "claude",
-  setSelectedModel: () => undefined
 };
 
 const DashboardContext = createContext<DashboardContextType>(initialContext);
@@ -38,7 +34,6 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({
   children,
 }) => {
   const [blogData, setBlogData] = useState<TiptapDocument>(initialBlogData);
-  const [selectedModel, setSelectedModel] = useState<ModelsType>("claude");
 
   useEffect(() => {
     socketClient.connect();
@@ -53,8 +48,6 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({
       value={{ 
         blogData, 
         setBlogData, 
-        selectedModel, 
-        setSelectedModel 
       }}
     >
       {children}

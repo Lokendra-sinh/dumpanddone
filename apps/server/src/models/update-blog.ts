@@ -87,6 +87,7 @@ export async function updateBlogContent({
   userQuery,
   model
 }: UpdateBlogType): Promise<TipTapContentType> {
+  console.log("Inside updare blog content", model);
   try {
 
     let rawContent;

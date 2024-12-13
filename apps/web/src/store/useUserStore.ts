@@ -1,3 +1,4 @@
+import { ModelsType } from "@dumpanddone/types";
 import { create } from "zustand";
 
 interface User {
@@ -11,12 +12,16 @@ interface User {
 
 interface UserState {
   user: User | null;
+  selectedModel: ModelsType
   setUser: (user: User) => void;
   clearUser: () => void;
+  setSelectedModel: (model: ModelsType) => void
 }
 
 export const useUserStore = create<UserState>((set) => ({
   user: null,
+  selectedModel: "claude",
+  setSelectedModel: (model) => set({selectedModel: model}),
   setUser: (user) => set({ user }),
   clearUser: () => set({ user: null }),
 }));

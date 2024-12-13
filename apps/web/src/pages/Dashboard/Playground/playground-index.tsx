@@ -1,10 +1,13 @@
 import { PlaygroundProvider } from "@/providers/playground-provider";
-import Playground from "./Playground";
+import { PlaygroundTabs } from "./playground-tabs";
+
 
 export const PlaygroundIndex = () => {
   return (
     <PlaygroundProvider>
-      <Playground />
+      <PlaygroundTabs />
     </PlaygroundProvider>
   );
 };
+
+

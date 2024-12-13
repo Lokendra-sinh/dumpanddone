@@ -22,6 +22,8 @@ export * from "./components/ui/toaster";
 export * from "./components/ui/toast";
 export * from "./hooks/use-toast";
 export * from "./components/ui/accordion"
+export * from "./components/ui/badge"
+export * from "./components/ui/dialog"
 export {
     cn
 }

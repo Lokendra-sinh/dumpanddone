@@ -7,6 +7,7 @@ import { db } from "../db";
 import { blogs, users } from "../db/schema";
 import { OutlineSectionSchema } from "@dumpanddone/types";
 import { and, eq } from "drizzle-orm";
+import { addOrUpdateBlog } from "../db/queries/blog";
 // import { addBlog } from "../db/queries/addBlog";
 
 
@@ -33,11 +34,10 @@ export const GeneratedBlogResponseSchema = z.discriminatedUnion("status", [
   }),
 ]);
 
-export const generateBlog = protectedProcedure
+export const createOrUpdateBlog = protectedProcedure
   .input(GenerateBlogInputSchema)
   .mutation(async ({ ctx, input }) => {
-    console.log("INSIDE GENERATE BLOGGGGGGGGGGGG");
-    const { userId,blogId, outline, model } = input;
+    const { userId, blogId, outline, model } = input;
     if (!userId) {
       throw new TRPCError({
         code: "PARSE_ERROR",
@@ -66,14 +66,8 @@ export const generateBlog = protectedProcedure
       const blogData = await generateBlogContent(chaos, outline, model);
       console.log("RESPONSE is", blogData);
 
-      // const blogDb = await addBlog({
-      //     userId: ctx.user.id,
-      //     last_updated: Date.now(),
-      //     content: blogData,
-      // })
-      // await db.insert(users).values({
-      //     content: blogData
-      // }).returning()
+      await addOrUpdateBlog({userId, blogId, content: blogData, outline: {sections: outline, created_at: new Date(), updated_at: new Date()}})
+
       return {
         status: "success",
         data: blogData,

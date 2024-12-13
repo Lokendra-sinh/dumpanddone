@@ -6,10 +6,19 @@ import {
   LoginRoute,
   RegisterRoute,
   GithubCallbackRoute,
+  BlogsRoute,
+  BlogEditorRoute,
+  DashboardIndexRoute,
 } from "./routes/routes";
 import { AuthRoute } from "./routes/authenticated-route";
 
-const AuthenticatedRoutes = [DashboardRoute];
+const AuthenticatedRoutes = [
+  DashboardRoute.addChildren([
+    BlogsRoute,
+    BlogEditorRoute,
+    DashboardIndexRoute
+  ])
+];
 
 const NonAuthenticatedRoutes = [
   IndexRoute,

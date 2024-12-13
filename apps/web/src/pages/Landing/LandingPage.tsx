@@ -164,7 +164,7 @@ const LandingPage = () => {
           ref={buttonRef}
           onClick={() =>
             navigate({
-              to: "/dashboard",
+              to: "/dashboard/blogs",
             })
           }
           className="w-full flex items-center justify-center mb-32"

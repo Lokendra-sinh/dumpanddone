@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { AuthContext, BaseContext, router } from "./trpc/initTRPC";
-import { generateBlog } from "./routers/generate-blog";
+import { createOrUpdateBlog } from "./routers/generate-blog";
 import Anthropic from "@anthropic-ai/sdk";
 import dotenv from "dotenv";
 import { googleLogin } from "./routers/user";
@@ -37,7 +37,7 @@ export const openai = new OpenAI({
 
 
 const appRouter = router({
-  generateBlog: generateBlog,
+  createOrUpdateBlog: createOrUpdateBlog,
   updateBlog: updateBlog,
   googleLogin: googleLogin,
   githubLogin: githubLogin,

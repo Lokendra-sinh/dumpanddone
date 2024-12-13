@@ -25,7 +25,7 @@ const data = {
     },
     {
       title: "Your blogs",
-      url: "/blogs",
+      url: "/dashboard/blogs",
     },
     {
       title: "Settings",

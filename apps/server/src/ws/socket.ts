@@ -23,9 +23,8 @@ export function setupWebSocketHandlers(wss: WebSocketServer) {
                 // Handle different message types
                 switch (parsedMessage.type) {
                     case 'START_STREAM':
-                        const blogId = uuidv4()
-                        ws.blogId = blogId
-                        addChaos(parsedMessage.chaos, parsedMessage.userId, blogId)
+                        ws.blogId = parsedMessage.blogId
+                        addChaos({chaos: parsedMessage.chaos, userId: parsedMessage.userId, blogId: parsedMessage.blogId})
                         startOutlineStreaming(parsedMessage.chaos, ws)
 
                         break;

@@ -5,6 +5,7 @@ interface SendMessageProps {
   type: "START_STREAM" | "STOP_STREAM";
   chaos: string;
   userId: string;
+  blogId: string;
 }
 
 // type WebSocketOutlineMessage =
@@ -59,13 +60,10 @@ class SocketClient {
           const parsed = JSON.parse(event.data);
 
           if (parsed.type === "OUTLINE_START") {
-            console.log("BLOG ID recieved from bakend is", parsed);
-            useBlogsStore
-              .getState()
-              .setActiveBlog({
-                id: parsed.blogId,
-                content: { type: "doc", content: [] },
-              });
+            const activeBlogId = useBlogsStore.getState().activeBlog;
+            if(activeBlogId !== parsed.blogId){
+              throw new Error("Blog Ids does not match")
+            }
             return;
           }
 
@@ -76,7 +74,7 @@ class SocketClient {
             });
             return;
           }
-        } catch {
+
           for (let i = 0; i < event.data.length; i++) {
             const ch = event.data[i];
             switch (this.currentState) {
@@ -123,6 +121,9 @@ class SocketClient {
                 break;
             }
           }
+
+        } catch(e) {
+          console.log("error is", e);
         }
       };
 

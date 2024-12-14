@@ -1,88 +1,103 @@
-import { anthropic, openai } from "..";
-import { WebSocket } from "ws";
+import { ModelsType } from "@dumpanddone/types";
+import { anthropic, deepseekAi, openai } from "..";
 import { outlineGeneratorPrompt } from "../prompts/generate-outline-instructions";
-import { ModifiedWebSocketInstanceType } from "../ws/socket";
-
-// export async function startOutlineStreaming(content: string, ws: WebSocket) {
-//     try {
-//          const stream = anthropic.messages.stream({
-//             model: "claude-3-5-sonnet-20241022",
-//             max_tokens: 8192,
-//             messages: [
-//                 {
-//                     role: "user",
-//                     content: outlineGeneratorPrompt(content),
-//                 },
-//                 // {
-//                 //     role: "assistant",
-//                 //     content: "Here is the JSON requested:\n{"
-//                 // }
-//             ],
-//             stream: true  // This is crucial for streaming!
-//         })
-
-//         stream.on('text', (text) => {
-//             console.log(text)
-//             ws.send(text)
-//         })
+import { ModifiedWebSocketInstanceType, RequestStateType } from "../ws/socket";
 
 
-//         stream.on('end', () => {
-//             ws.send("OUTLINE_COMPLETE")
-//         })
 
-//     } catch (error) {
-//         // Send error through WebSocket
-//         // ws.send(JSON.stringify({
-//         //     type: 'OUTLINE_ERROR',
-//         //     requestId,
-//         //     error: error.message
-//         // }));
-//         console.error('Streaming error:', error);
-//     }
-// }
+async function streamWithClaude(content: string, ws: ModifiedWebSocketInstanceType) {
+     anthropic.messages.stream({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 4096,
+        messages: [
+            {
+                role: "user",
+                content: outlineGeneratorPrompt(content),
+            }
+        ],
+    }).on('text', (text) => {
+        ws.send(text)
+    })
+}
 
+async function streamWithDeepseek(content: string, ws: ModifiedWebSocketInstanceType) {
+    const stream = await deepseekAi.chat.completions.create({
+        messages: [
+            { 
+                role: "user", 
+                content: outlineGeneratorPrompt(content) 
+            }
+        ],
+        model: "deepseek-chat",
+        stream: true
+    });
 
-export async function startOutlineStreaming(content: string, ws: ModifiedWebSocketInstanceType) {
+    for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+            ws.send(content);
+        }
+    }
+}
+
+async function streamWithGPT(content: string, ws: ModifiedWebSocketInstanceType) {
+    const stream = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+            {
+                role: "user",
+                content: outlineGeneratorPrompt(content),
+            }
+        ],
+        stream: true,
+    });
+
+    for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+            ws.send(content);
+        }
+    }
+}
+
+export async function startOutlineStreaming(
+    content: string, 
+    requestState: RequestStateType,
+    model: ModelsType = "gpt"
+) {
+    const { blogId, ws, userId } = requestState
     try {
-
         ws.send(JSON.stringify({
             type: "OUTLINE_START",
-            blogId: ws.blogId
+            blogId: blogId
         }))
 
-        const stream = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [
-                {
-                    role: "user",
-                    content: outlineGeneratorPrompt(content),
-                }
-            ],
-            stream: true,
-        });
-
-
-        for await (const chunk of stream) {
-            const content = chunk.choices[0]?.delta?.content;
-            console.log("CONTENT: ", content);
-            if (content) {
-                console.log(content);
-                ws.send(content);
-            }
+        // Stream based on selected model
+        switch (model) {
+            case "claude":
+                await streamWithClaude(content, ws);
+                break;
+            case "deepseek":
+                await streamWithDeepseek(content, ws);
+                break;
+            case "gpt":
+                await streamWithGPT(content, ws);
+                break;
+            default:
+                throw new Error(`Unsupported model: ${model}`);
         }
 
         ws.send(JSON.stringify({
             type: "OUTLINE_COMPLETE",
-            blogId: ws.blogId
+            blogId: blogId
         }))
 
     } catch (error) {
         console.error('Streaming error:', error);
-        // Should probably send this to the client too!
-        // ws.send(JSON.stringify({
-        //     type: 'OUTLINE_ERROR',
-        //     error: error.message
-        // }));
+        ws.send(JSON.stringify({
+            type: 'OUTLINE_ERROR',
+            error: error,
+            blogId: blogId
+        }));
     }
 }

@@ -30,5 +30,5 @@ export const useEditorInstance = (props: UseEditorInstanceProps) => {
       ...config.editorProps,
       ...handlers.editorProps,
     },
-  });
+  },[content]);
 };

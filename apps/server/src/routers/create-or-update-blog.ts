@@ -18,10 +18,10 @@ const GenerateBlogInputSchema = z.object({
   blogId: z.string(),
 });
 
-const GeneratedBlogOutputSchema = z.object({
-  status: z.string(),
-  data: z.union([generatedBlogSchema, z.string()]),
-});
+// const GeneratedBlogOutputSchema = z.object({
+//   status: z.string(),
+//   data: z.union([generatedBlogSchema, z.string()]),
+// });
 
 export const GeneratedBlogResponseSchema = z.discriminatedUnion("status", [
   z.object({
@@ -64,13 +64,16 @@ export const createOrUpdateBlog = protectedProcedure
       console.log("Generating blog data");
 
       const blogData = await generateBlogContent(chaos, outline, model);
-      console.log("RESPONSE is", blogData);
+      console.log("Blogdata before adding to db is", blogData);
 
       await addOrUpdateBlog({userId, blogId, content: blogData, outline: {sections: outline, created_at: new Date(), updated_at: new Date()}})
 
       return {
         status: "success",
-        data: blogData,
+        data: {
+          blogId: blogId,
+          blogData: blogData,
+        },
       };
     } catch (error) {
       console.log("ERROR is", error);

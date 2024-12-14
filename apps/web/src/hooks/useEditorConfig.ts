@@ -76,7 +76,7 @@ export const useEditorConfig = () => {
         // Paragraph configuration
         paragraph: {
           HTMLAttributes: {
-            class: "leading-relaxed",
+            class: "leading-relaxed my-2",
           },
         },
         // Code block configuration

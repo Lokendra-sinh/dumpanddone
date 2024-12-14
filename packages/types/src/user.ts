@@ -1,3 +1,4 @@
+import { TiptapDocumentSchema } from './blogSchema';
 import z from 'zod'
 
 export const UserSchema = z.object({
@@ -11,6 +12,10 @@ export const UserSchema = z.object({
       z.literal("github"),
       z.literal("email"),
     ]),
+    blogs: z.array(z.object({
+      id: z.string(),
+      content: TiptapDocumentSchema
+    }))
   });
 
 export type UserSchemaType = z.infer<typeof UserSchema>

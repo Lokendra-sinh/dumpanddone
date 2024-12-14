@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { publicProcedure } from "../trpc/initTRPC";
 import { getUser } from "../db/queries/queryUser";
 import { LoginResponseSchema, LoginResponseSchemaType } from "./user";
+import { getBlogsByUserId } from "../db/queries/blog";
 
 export const silentAuth = publicProcedure
   .output(LoginResponseSchema)
@@ -15,12 +16,8 @@ export const silentAuth = publicProcedure
     }
 
     const user = await getUser(userId);
-    if (!user) {
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "User not found. Please sign up to get started",
-      });
-    }
+
+    const userBlogs = await getBlogsByUserId(userId)
 
     return {
       status: "success",
@@ -31,6 +28,7 @@ export const silentAuth = publicProcedure
         email: user.email,
         created_at: user.created_at,
         auth_method: user.auth_method,
+        blogs: userBlogs,
       },
     };
   });

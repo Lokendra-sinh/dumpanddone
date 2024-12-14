@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { AuthContext, BaseContext, router } from "./trpc/initTRPC";
-import { createOrUpdateBlog } from "./routers/generate-blog";
+import { createOrUpdateBlog } from "./routers/create-or-update-blog";
 import Anthropic from "@anthropic-ai/sdk";
 import dotenv from "dotenv";
 import { googleLogin } from "./routers/user";
@@ -14,7 +14,7 @@ import OpenAI from "openai";
 import { silentAuth } from "./routers/silent-auth";
 import { createServer } from 'http'
 import { WebSocketServer } from "ws";
-import { setupWebSocketHandlers } from "./ws/socket";
+import { Socket } from "./ws/socket";
 import { updateBlog } from "./routers/update-blog";
 
 
@@ -57,7 +57,7 @@ app.use(express.json());
 
 const httpServer = createServer(app)
 export const wss = new WebSocketServer({server: httpServer})
-setupWebSocketHandlers(wss)
+new Socket(wss)
 
 app.use(
   "/trpc",

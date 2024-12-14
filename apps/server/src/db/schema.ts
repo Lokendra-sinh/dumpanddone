@@ -23,7 +23,7 @@ export type Users = InferSelectModel<typeof users>;
 
 
 export const blogs = pgTable("blogs", {
-  id: uuid("id").defaultRandom(),
+  id: uuid("id").defaultRandom().notNull(),
   user_id: uuid("user_id")
     .references(() => users.id, {
       onDelete: "cascade",

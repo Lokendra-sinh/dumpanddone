@@ -6,6 +6,7 @@ import { getUserByEmail } from "../db/queries/queryUser";
 import { addUser } from "../db/queries/addUser";
 import { generateJwtToken } from "../utils/generate-jwt-token";
 import { COOKIE_CONFIG } from "../utils/cookies";
+import { getBlogsByUserId } from "../db/queries/blog";
 
 const GithubAccessTokenResponseSchema = z.object({
   access_token: z.string(),
@@ -23,7 +24,7 @@ const GithubUserResponseSchema = z.object({
 });
 
 
-const NormalizeUserSchema = UserSchema.omit({id: true})
+const NormalizeUserSchema = UserSchema.omit({id: true, blogs: true})
 
 const LoginResponseSchema = z.object({
   status: z.literal("success"),
@@ -138,6 +139,8 @@ export const githubLogin = authProcedure
 
     const user = existingUser || (await addUser(normalizedUser));
 
+    const userBlogs = await getBlogsByUserId(user.id)
+
     try {
       const sessionToken = generateJwtToken(user.id);
       ctx.res.cookie("authToken", sessionToken, COOKIE_CONFIG);
@@ -150,6 +153,7 @@ export const githubLogin = authProcedure
           email: user.email,
           created_at: user.created_at!,
           auth_method: user.auth_method,
+          blogs: userBlogs,
         },
       };
     } catch (error) {

@@ -1,11 +1,12 @@
-import { useBlogsStore } from "@/store/useBlogsStore";
-import { OutlineSectionType } from "@dumpanddone/types";
+
+import { ModelsType, OutlineSectionType } from "@dumpanddone/types";
 
 interface SendMessageProps {
   type: "START_STREAM" | "STOP_STREAM";
   chaos: string;
   userId: string;
   blogId: string;
+  selectedModel: ModelsType
 }
 
 // type WebSocketOutlineMessage =
@@ -56,14 +57,21 @@ class SocketClient {
       };
 
       this.socket.onmessage = (event) => {
+        console.log("EVENT is", event);
         try {
           const parsed = JSON.parse(event.data);
 
           if (parsed.type === "OUTLINE_START") {
-            const activeBlogId = useBlogsStore.getState().activeBlog;
-            if(activeBlogId !== parsed.blogId){
-              throw new Error("Blog Ids does not match")
-            }
+            // const activeBlogId = useBlogsStore.getState().activeBlog?.id;
+            // console.log("activeBlog id is", activeBlogId);
+            // if(activeBlogId !== parsed.blogId){
+            //   // should never happen. something doesn't feel right
+            //   throw new Error("Blog Ids does not match")
+            // }
+            // this.emitSection({
+            //   title: "OUTLINE_START",
+            //   description: "OUTLINE_START",
+            // });
             return;
           }
 
@@ -75,7 +83,10 @@ class SocketClient {
             return;
           }
 
+        } catch(e) {
+          console.log("error is", e);
           for (let i = 0; i < event.data.length; i++) {
+
             const ch = event.data[i];
             switch (this.currentState) {
               case "BUILDING_TAG":
@@ -121,9 +132,6 @@ class SocketClient {
                 break;
             }
           }
-
-        } catch(e) {
-          console.log("error is", e);
         }
       };
 

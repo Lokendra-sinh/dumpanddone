@@ -50,7 +50,7 @@ async function generateWithGPT(chaos: string, outline: OutlineSectionType[]) {
       { role: "system", content: "You are a specialized blog content generator that outputs only valid Tiptap JSON." },
       { role: "user", content: prompt }
     ],
-    model: "gpt-4o-mini",
+    model: "gpt-4o",
     response_format: { type: "json_object" },
     temperature: 0.7,
     max_tokens: 8000,
@@ -89,7 +89,7 @@ export async function generateBlogContent(
     const parsedContent = JSON.parse(cleanedJson);
 
     // Validate Tiptap-specific structure
-    validateTiptapStructure(parsedContent);
+    // validateTiptapStructure(parsedContent);
 
     return parsedContent;
   } catch (error) {

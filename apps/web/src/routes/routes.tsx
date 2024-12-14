@@ -12,6 +12,7 @@ import { GithubCallback } from "@/pages/GithubCallback";
 import { Root } from "@/pages/Root";
 import { useUserStore } from "@/store/useUserStore";
 import { PlaygroundIndex } from "@/pages/Dashboard/Playground/playground-index";
+import { z } from "zod";
 
 export const RootRoute = createRootRoute({
   component: Root,
@@ -139,9 +140,16 @@ export const BlogsRoute = createRoute({
 });
 
 
+const BlogEditorRouteSchema = z.object({
+  selectedTab: z.union([z.literal("playground"), z.literal("outline"), z.literal("upload")]).optional()
+})
+
 export const BlogEditorRoute = createRoute({
   getParentRoute: () => DashboardRoute,  // Changed to DashboardRoute
   path: "/editor/$blogId",               // Changed path to be more explicit
   component: PlaygroundIndex,
+  validateSearch: (search: Record<string, unknown>) => {
+    return BlogEditorRouteSchema.parse(search)
+  },
 });
 

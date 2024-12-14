@@ -19,45 +19,45 @@ import {
 import { Upload, Palette, FileDown, Loader2 } from "lucide-react";
 import { useUserStore } from "@/store/useUserStore";
 import { useBlogsStore } from "@/store/useBlogsStore";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ModelsType, OutlineSectionType } from "@dumpanddone/types";
 import { socketClient } from "@/utils/socket";
 import { trpc } from "@/utils/trpc";
 import { Outline } from "./Outline";
 import { ScanningTextArea } from "./scanning-text-area";
 import { PrimaryEditor } from "./primary-editor";
-import { useParams } from "@tanstack/react-router";
+import { useParams, useSearch } from "@tanstack/react-router";
 import { BlogEditorRoute } from "@/routes/routes";
 
+type TabsType = "upload" | "outline" | "playground"
+
 export const PlaygroundTabs = () => {
-  const { blogId } = useParams({from: BlogEditorRoute.id})
+  const { blogId } = useParams({ from: BlogEditorRoute.id });
+  const { selectedTab } = useSearch({from: BlogEditorRoute.id})
   const user = useUserStore((state) => state.user);
   const setModelInZustand = useUserStore((state) => state.setSelectedModel);
-  const activeBlog = useBlogsStore(
-    useCallback((state) => state.activeBlog, [])
-  );
-  const setActiveBlog = useBlogsStore(state => state.setActiveBlog)
+  const activeBlogId = useBlogsStore(state => state.activeBlog?.id)
+  const setActiveBlog = useBlogsStore((state) => state.setActiveBlog);
   const [content, setContent] = useState<string>("");
-  const [activeTab, setActiveTab] = useState("upload");
+  const [activeTab, setActiveTab] = useState<TabsType>(selectedTab || "upload");
   const [sections, setSections] = useState<OutlineSectionType[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelsType>("claude");
   const tabsAlreadySwitched = useRef<boolean>(false);
 
-
   const generateBlogMutation = trpc.createOrUpdateBlog.useMutation({
     onSuccess: (res) => {
       console.log("res is", res);
-      const parsedData = res.data!;
+      const parsedData = res.data.blogData!;
       console.log("parsed data is", parsedData);
-      setActiveBlog(parsedData);
-      setActiveTab("playground")
+      setActiveBlog({id: res.data?.blogId, content: res.data.blogData});
+      setActiveTab("playground");
     },
   });
 
   useEffect(() => {
-    console.log("activeBlog changed:", activeBlog);
-  }, [activeBlog]);
+    console.log("activeBlog changed:", activeBlogId);
+  }, [activeBlogId]);
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setContent(e.target.value.trim());
@@ -71,16 +71,18 @@ export const PlaygroundTabs = () => {
       chaos: content,
       userId: user!.id!,
       blogId: blogId,
+      selectedModel: selectedModel
     });
   };
 
   const generateBlog = () => {
-    if (!user || !activeBlog) return;
     console.log("user is", user);
+    console.log("active blog is", activeBlogId);
+    if (!user || !blogId) return;
     generateBlogMutation.mutate({
       model: selectedModel,
       outline: sections,
-      userId: user.id!,
+      userId: user!.id!,
       blogId: blogId,
     });
   };
@@ -119,7 +121,7 @@ export const PlaygroundTabs = () => {
         <Tabs
           className="h-full flex flex-col"
           value={activeTab}
-          onValueChange={setActiveTab}
+          onValueChange={(value) => setActiveTab(value as TabsType)}
         >
           <div className="w-full flex items-center justify-between">
             <TabsList className="">
@@ -229,7 +231,7 @@ export const PlaygroundTabs = () => {
             {/* <div className="w-fit shrink-0 mt-4"> */}
             <Button
               className="w-fit shrink-0 bg-gradient-to-b from-[#1a1a1c] to-[#3d3e43] hover:opacity-90 transition-opacity"
-              onClick={generateBlog}
+              onClick={() => generateBlog()}
               disabled={isScanning}
             >
               {isScanning ? (
@@ -248,11 +250,11 @@ export const PlaygroundTabs = () => {
             className="h-[calc(100vh-160px)] flex flex-col gap-4"
             value="playground"
           >
-           <Card className="border-none shadow-none flex-1 flex items-center justify-center bg-background">
-    <div className="w-full max-w-4xl mx-auto px-4">
-      <PrimaryEditor />
-    </div>
-  </Card>
+            <Card className="border-none shadow-none flex-1 flex items-center justify-center bg-background">
+              <div className="w-full max-w-4xl mx-auto px-4">
+                <PrimaryEditor />
+              </div>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

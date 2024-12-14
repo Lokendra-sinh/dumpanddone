@@ -32,7 +32,7 @@ export const PlaygroundContext = createContext<PlaygroundContextType | null>(nul
 
 export const PlaygroundProvider = ({ children }: { children: ReactNode }) => {
 
-  const blogData = useBlogsStore(state => state.activeBlog)
+  const blogData = useBlogsStore(state => state.activeBlog?.content)
   const config = useEditorConfig();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [coords, setCoords] = useState<Coordinates>({top: 0, left: 0});
@@ -42,7 +42,7 @@ export const PlaygroundProvider = ({ children }: { children: ReactNode }) => {
 
   const editor = useEditorInstance({
     config,
-    content: blogData?.content,
+    content: blogData,
     handlers: {
       editorProps: {
         handleKeyDown: (view, event) => {

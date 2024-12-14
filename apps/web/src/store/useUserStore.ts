@@ -1,5 +1,6 @@
 import { ModelsType } from "@dumpanddone/types";
 import { create } from "zustand";
+import { BlogType } from "./useBlogsStore";
 
 interface User {
   id: string,
@@ -8,6 +9,7 @@ interface User {
   avatar: string;
   auth_method: string;
   created_at: string;
+  blogs: BlogType[]
 }
 
 interface UserState {

@@ -419,7 +419,7 @@ export const EditorFormattingOptionsDropdown = () => {
   );
 };
 
-function getTiptapDoc(nodes) {
+export function getTiptapDoc(nodes) {
   if (!nodes || !nodes.content) {
     return { type: "doc", content: [] };
   }

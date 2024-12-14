@@ -9,6 +9,7 @@ import { addUser } from "../db/queries/addUser";
 import { generateJwtToken } from "../utils/generate-jwt-token";
 import { getUser, getUserByEmail } from "../db/queries/queryUser";
 import { UserSchema } from "@dumpanddone/types";
+import { getBlogsByUserId } from "../db/queries/blog";
 
 const LoginSchema = z.object({
   accessToken: z.string(),
@@ -80,6 +81,8 @@ export const googleLogin = authProcedure
       }
     }
 
+    const userBlogs = await getBlogsByUserId(user.id)
+
     try {
       const sessionToken = generateJwtToken(user.id);
       ctx.res.cookie("authToken", sessionToken, COOKIE_CONFIG);
@@ -93,6 +96,7 @@ export const googleLogin = authProcedure
           email: user.email,
           created_at: user.created_at!,
           auth_method: user.auth_method,
+          blogs: userBlogs,
         },
       };
     } catch (error) {

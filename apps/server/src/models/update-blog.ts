@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { blogContentUpdatePrompt } from "../prompts/update-blog-instructions";
 import { cleanAndValidateJson } from "../utils/clean-and-validate-json";
 import { validateTiptapStructure } from "../utils/validate-tiptap-structure";
+import { unknown } from "zod";
 
 interface UpdateBlogType {
     selectedContent: TipTapContentType;
@@ -18,6 +19,7 @@ async function updateWithClaude(
   selectedContent: TipTapContentType,
   blogData: TiptapDocument
 ) {
+  try {
   const prompt = blogContentUpdatePrompt(userQuery, selectedContent, blogData);
   const message = await anthropic.messages.create({
     model: "claude-3-5-sonnet-20241022",
@@ -36,6 +38,13 @@ async function updateWithClaude(
 
   const content = message.content[0];
   return content;
+} catch(e: any){
+   const message = e!.error?.message || "Issue with claude"
+   throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: message
+   })
+}
 }
 
 // DeepSeek-specific content update
@@ -87,8 +96,7 @@ export async function updateBlogContent({
   userQuery,
   model
 }: UpdateBlogType): Promise<TipTapContentType> {
-  console.log("Inside updare blog content", model);
-  try {
+
 
     let rawContent;
     switch (model) {
@@ -115,11 +123,4 @@ export async function updateBlogContent({
     // validateTiptapStructure(parsedContent);
 
     return parsedContent;
-  } catch (error) {
-    console.error("Error updating blog content:", error);
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: `Failed to update blog content with ${model}: ${error}`,
-    });
-  }
 }

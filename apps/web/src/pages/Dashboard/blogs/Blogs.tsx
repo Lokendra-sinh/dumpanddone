@@ -55,13 +55,13 @@ const Blogs = () => {
     }
 
     // Extract author
-    if (content[1].type === "paragraph" && content[1].content[0].type === "text") {
+    if (content[1]?.type === "paragraph" && content[1]?.content[0]?.type === "text") {
       author = content[1].content[0].text || '';
     }
 
     // Extract read time
-    if (content[2].type === "paragraph") {
-      readTime = content[2].content[0].type === "text" ? content[2].content[0].text : ""
+    if (content[2]?.type === "paragraph") {
+      readTime = content[2]?.content[0]?.type === "text" ? content[2]?.content[0]?.text : ""
       // Extract just the number from "Estimated read time: X min"
       const match = readTime.match(/\d+/);
       readTime = match ? match[0] : '';

@@ -87,6 +87,29 @@ export const PlaygroundTabs = () => {
     });
   };
 
+  const handleDelete = (index: number) => {
+    setSections((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleUpdate = (index: number, updatedSection: OutlineSectionType) => {
+    setSections((prev) =>
+      prev.map((section, i) => (i === index ? { ...section, ...updatedSection } : section))
+    )
+  }
+
+  const handleInsert = (index: number) => {
+    setSections((prev) => [
+      ...prev.slice(0, index + 1),
+      {
+        id: `new-section-${Date.now()}`,
+        title: "New Section",
+        description: "Add your content here",
+        isEdited: true
+      },
+      ...prev.slice(index + 1)
+    ])
+  }
+
   const handleExport = (format: string) => {
     console.log("format is", format);
   };
@@ -225,7 +248,7 @@ export const PlaygroundTabs = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1 overflow-hidden">
-                <Outline sections={sections} />
+              <Outline sections={sections} onDelete={handleDelete} onUpdate={handleUpdate} onInsert={handleInsert} />
               </CardContent>
             </Card>
             {/* <div className="w-fit shrink-0 mt-4"> */}

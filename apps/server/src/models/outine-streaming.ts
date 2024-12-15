@@ -29,6 +29,7 @@ async function streamWithDeepseek(content: string, ws: ModifiedWebSocketInstance
             }
         ],
         model: "deepseek-chat",
+        temperature: 1.5,
         stream: true
     });
 

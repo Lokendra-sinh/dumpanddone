@@ -1,10 +1,5 @@
 import { TipTapNodeType } from "@dumpanddone/types";
 
-type BlogParserState =
- | "WAITING_FOR_START"
- | "BUILDING_STATE"
- | "BUILDING_NODE"
- | "IN_JSON";
 
 type BlogParserListener = {
  onState: (state: string) => void;
@@ -15,9 +10,6 @@ type BlogState = "WAITING" | "BUILDING"
 
 class BlogParser {
  private buffer: string = "";
- private currentState: BlogParserState = "WAITING_FOR_START";
- private bracketCount: number = 0
- private currentToken: string = "";
  private isStarted: boolean = false;
  private listeners: BlogParserListener[] = [];
  public blogState: BlogState = "WAITING"
@@ -95,7 +87,6 @@ class BlogParser {
      if (this.buffer.includes("END_STREAM")) {
        this.isStarted = false;
        this.buffer = "";
-       this.currentState = "WAITING_FOR_START";
        break;
      }
 
@@ -130,9 +121,6 @@ class BlogParser {
 
  reset() {
    this.buffer = "";
-   this.currentState = "WAITING_FOR_START";
-   this.bracketCount = 0;
-   this.currentToken = "";
    this.isStarted = false;
    this.listeners = [];
  }

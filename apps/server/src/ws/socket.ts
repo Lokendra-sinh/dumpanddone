@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { WebSocket, WebSocketServer } from "ws";
 import { startOutlineStreaming } from "../models/outine-streaming";
 import { addChaos } from "../db/queries/addContent";
+import { startBlogStreaming } from '../models/stream-blog';
 
 export interface ModifiedWebSocketInstanceType extends WebSocket{
     blogId: string,
@@ -23,7 +24,6 @@ export class Socket {
     constructor(wss: WebSocketServer) {
         this.wss = wss
         this.setupConnectionListener()
-        console.log("Setting up WebSocket handlers...")
     }
  
     private setupConnectionListener() {
@@ -31,7 +31,6 @@ export class Socket {
     }
  
     private handleConnection(ws: ModifiedWebSocketInstanceType) {
-        console.log("Client connected to websocket")
         
         this.setupMessageHandler(ws)
         this.setupCloseHandler(ws)
@@ -41,20 +40,24 @@ export class Socket {
  
     private setupMessageHandler(ws: ModifiedWebSocketInstanceType) {
         ws.on('message', (message: string) => {
-            const requestId = uuidv4()
-            const parsedMessage = JSON.parse(message.toString())
-            const requestState: RequestStateType = {
-                ws,
-                requestId,
-                blogId: parsedMessage.blogId,
-                userId: parsedMessage.userId,
-                startTime: new Date()
-            }
-            this.requests.set(requestId, requestState)
-            const selectedModel = parsedMessage.selectedModel
             try {
+                // Move parsing inside try-catch
+                const parsedMessage = JSON.parse(message.toString())
+                const requestId = uuidv4()
+                
+                const requestState: RequestStateType = {
+                    ws,
+                    requestId,
+                    blogId: parsedMessage.blogId,
+                    userId: parsedMessage.userId,
+                    startTime: new Date()
+                }
+                
+                this.requests.set(requestId, requestState)
+                const selectedModel = parsedMessage.selectedModel
+                
                 switch (parsedMessage.type) {
-                    case 'START_STREAM':
+                    case 'START_OUTLINE_STREAM':
                         addChaos({
                             chaos: parsedMessage.chaos, 
                             userId: parsedMessage.userId, 
@@ -63,8 +66,24 @@ export class Socket {
                         startOutlineStreaming(parsedMessage.chaos, requestState, selectedModel)
                         break
                         
-                    case 'STOP_STREAM':
-                        // Handle stream stop
+                    case 'START_BLOG_STREAM':
+                        // Ensure we have necessary data
+                        if (!parsedMessage.outline || !parsedMessage.userId || !parsedMessage.blogId) {
+                            throw new Error('Missing required data for blog generation')
+                        }
+                        
+                        startBlogStreaming({
+                            outline: parsedMessage.outline,
+                            userId: parsedMessage.userId,
+                            blogId: parsedMessage.blogId,
+                            requestState,
+                            selectedModel
+                })
+                        break
+                        
+                    case 'STOP_OUTLINE_STREAM':
+                    case 'STOP_BLOG_STREAM':
+                        // Maybe add cleanup logic here later
                         break
                         
                     default:
@@ -74,7 +93,7 @@ export class Socket {
                 console.error('Error handling message:', error)
                 ws.send(JSON.stringify({ 
                     type: 'ERROR', 
-                    message: 'Invalid message format' 
+                    message: error instanceof SyntaxError ? 'Invalid message format' : error
                 }))
             }
         })

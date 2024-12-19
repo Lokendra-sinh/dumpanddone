@@ -20,6 +20,7 @@ import {
   ImageIcon,
   List,
   ListOrdered,
+  Loader2,
   Minus,
   Quote,
   TableIcon,
@@ -66,6 +67,8 @@ import { TipTapContentType } from "@dumpanddone/types";
 //     }
 //   ]
 // }
+// }
+
 
 export const EditorFormattingOptionsDropdown = () => {
   const { editor, coords, selectionInfo, setSelectionInfo, isDropdownOpen } =
@@ -112,7 +115,7 @@ export const EditorFormattingOptionsDropdown = () => {
   const handleAiEnhance = () => {
     if (!selectionInfo || !selectionInfo.nodes) return;
     if (!userID) return;
-    console.log("Selected model is", selectedModel);
+    console.log("Selected nodes is", selectedNodes.content);
     enhanceTextMutation.mutate({
       selectedContent: selectedNodes.content,
       userQuery: aiPrompt,
@@ -190,15 +193,17 @@ export const EditorFormattingOptionsDropdown = () => {
           const { selection } = state;
           const { empty } = selection;
           const hasSelection = !empty && selection.content().size > 0;
-
-          if (hasSelection) {
-            // Focus textarea after BubbleMenu appears
+          
+          // Don't show bubble menu if selection contains loading node
+          const hasLoadingNode = editor.isActive('loadingNode');
+          
+          if (hasSelection && !hasLoadingNode) {
             setTimeout(() => {
               textareaRef.current?.focus();
             }, 0);
           }
-
-          return hasSelection || isDropdownOpen;
+      
+          return hasSelection && !hasLoadingNode || isDropdownOpen;
         }}
         editor={editor}
         tippyOptions={{
@@ -316,6 +321,11 @@ export const EditorFormattingOptionsDropdown = () => {
                       icon: <Code2 className="w-4 h-4" />,
                       label: "Code Block",
                       command: "codeBlock",
+                    },
+                    {
+                      icon: <Loader2 className="w-4 h-4" />,
+                      label: "Loading State",
+                      command: "loading",
                     },
                   ].map(({ icon, label, command }) => (
                     <button

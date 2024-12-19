@@ -12,6 +12,7 @@ import { all, createLowlight } from "lowlight";
 import { mergeAttributes } from "@tiptap/core";
 import Link from "@tiptap/extension-link";
 import { highlight } from "@/lib/highlight-extension";
+import { LoadingNode } from "@/lib/loading-node";
 
 const lowlight = createLowlight(all);
 
@@ -19,6 +20,7 @@ export const useEditorConfig = () => {
   return {
     extensions: [
       highlight,
+      LoadingNode,
       StarterKit.configure({
         heading: false,
         codeBlock: false,

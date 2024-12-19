@@ -1,5 +1,5 @@
 {
-  "id": "79409028-b946-4bc0-93b1-33de820028ba",
+  "id": "94498efe-5b14-47b4-b542-a6ae6749a866",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -12,7 +12,7 @@
           "name": "id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "default": "gen_random_uuid()"
         },
         "user_id": {
@@ -37,7 +37,7 @@
         },
         "chaos": {
           "name": "chaos",
-          "type": "jsonb",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },

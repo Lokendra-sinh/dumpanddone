@@ -35,7 +35,7 @@ export const blogs = pgTable("blogs", {
   last_updated: timestamp("last_updated", { withTimezone: true })
     .defaultNow()
     .notNull(),
-  chaos: jsonb("chaos").notNull(),
+  chaos: text().notNull(),
   outline: jsonb("outline").notNull().$type<BlogOutlineType>(),
   blog: jsonb("blog").notNull().$type<TiptapDocument>()
 

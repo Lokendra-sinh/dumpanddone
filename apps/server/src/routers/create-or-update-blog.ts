@@ -1,7 +1,7 @@
 import { protectedProcedure, publicProcedure } from "../trpc/initTRPC";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
-import { generateBlogContent } from "../models/claude";
+import { generateBlogContent } from "../models/generate-blog";
 import { generatedBlogSchema } from "../types/blog";
 import { db } from "../db";
 import { blogs, users } from "../db/schema";

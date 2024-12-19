@@ -8,6 +8,19 @@ export const commandsMap = new Map<string, EditorCommand>([
   ["h2", (editor) => editor.chain().focus().toggleHeading({ level: 2 }).run()],
   ["h3", (editor) => editor.chain().focus().toggleHeading({ level: 3 }).run()],
 
+  ["loading", (editor) => {
+    
+    return editor
+      .chain()
+      .focus()
+      .deleteSelection()
+      .insertContent({
+        type: 'loadingNode',
+        attrs: { message: 'Loading...' }
+      })
+      .run();
+  }],
+
   // List Variations
   ["bullet", (editor) => editor.commands.toggleBulletList()],
   ["ordered", (editor) => editor.chain().focus().toggleOrderedList().run()],

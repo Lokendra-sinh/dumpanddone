@@ -39,7 +39,7 @@ export const Outline: React.FC<OutlineProps> = ({ sections, onDelete, onUpdate, 
       <Accordion type="single" collapsible className="w-full flex flex-col gap-4">
         {sections.map((section, index) => (
           <Section
-            key={section.id}
+            key={section.id + index}
             id={section.id}
             title={section.title}
             description={section.description}

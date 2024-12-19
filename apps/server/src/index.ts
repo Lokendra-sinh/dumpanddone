@@ -16,6 +16,9 @@ import { createServer } from 'http'
 import { WebSocketServer } from "ws";
 import { Socket } from "./ws/socket";
 import { updateBlog } from "./routers/update-blog";
+import { syncChaos } from "./routers/sync-chaos";
+import { syncOutline } from "./routers/sync-outline";
+import { syncBlog } from "./routers/sync-blog";
 
 
 dotenv.config();
@@ -39,6 +42,9 @@ export const openai = new OpenAI({
 const appRouter = router({
   createOrUpdateBlog: createOrUpdateBlog,
   updateBlog: updateBlog,
+  syncChaos: syncChaos,
+  syncOutline: syncOutline,
+  syncBlog: syncBlog,
   googleLogin: googleLogin,
   githubLogin: githubLogin,
   silentAuth: silentAuth,

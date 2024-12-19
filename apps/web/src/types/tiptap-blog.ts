@@ -9,7 +9,15 @@ interface TiptapDocument {
     | CodeBlockNode
     | BlockquoteNode
     | ImageNode
+    | LoadingNode
   >;
+}
+
+interface LoadingNode {
+  type: "loadingNode";
+  attrs: {
+    message: string;
+  };
 }
 
 interface ParagraphNode {
@@ -103,4 +111,5 @@ export type {
   Mark,
   ImageNode,
   OrderedListNode,
+  LoadingNode
 };

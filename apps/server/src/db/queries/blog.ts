@@ -3,6 +3,7 @@ import { TiptapDocument, BlogOutlineType } from '@dumpanddone/types'
 import { db } from '..'
 import { blogs } from '../schema'
 import { and, eq } from 'drizzle-orm'
+import { TRPCError } from '@trpc/server'
 
 interface BlogData {
     userId: string
@@ -26,7 +27,10 @@ export async function getBlogById(blogId: string, userId: string) {
         return blog[0];
     } catch (error) {
         console.error("Error fetching blog:", error);
-        throw error;
+        throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Error while retrieving blog from DB."
+        });
     }
 }
 
@@ -72,7 +76,7 @@ export async function createBlog(blogData: BlogData) {
                 user_id: userId,
                 created_at: new Date(),
                 last_updated: new Date(),
-                chaos: {},
+                chaos: "",
                 outline: outline!,
                 blog: content!,
             })

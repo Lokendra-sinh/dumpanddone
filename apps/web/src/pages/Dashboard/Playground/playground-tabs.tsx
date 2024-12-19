@@ -16,28 +16,30 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@dumpanddone/ui";
-import { Upload, Palette, FileDown, Loader2 } from "lucide-react";
+import { Upload, Palette, FileDown, Loader2, InfoIcon } from "lucide-react";
 import { useUserStore } from "@/store/useUserStore";
 import { useBlogsStore } from "@/store/useBlogsStore";
 import { useEffect, useRef, useState } from "react";
 import { ModelsType, OutlineSectionType } from "@dumpanddone/types";
-import { socketClient } from "@/utils/socket";
-import { trpc } from "@/utils/trpc";
+import { socketClient } from "@/socket/socket-client";
 import { Outline } from "./Outline";
 import { ScanningTextArea } from "./scanning-text-area";
 import { PrimaryEditor } from "./primary-editor";
 import { useParams, useSearch } from "@tanstack/react-router";
 import { BlogEditorRoute } from "@/routes/routes";
+import { outlineParser } from "@/socket/outline-parser";
+import { trpc } from "@/utils/trpc";
+import { usePlayground } from "@/providers/playground-provider";
 
-type TabsType = "upload" | "outline" | "playground"
+type TabsType = "upload" | "outline" | "playground";
 
 export const PlaygroundTabs = () => {
   const { blogId } = useParams({ from: BlogEditorRoute.id });
-  const { selectedTab } = useSearch({from: BlogEditorRoute.id})
+  const { editor } = usePlayground();
+  const { selectedTab } = useSearch({ from: BlogEditorRoute.id });
   const user = useUserStore((state) => state.user);
   const setModelInZustand = useUserStore((state) => state.setSelectedModel);
-  const activeBlogId = useBlogsStore(state => state.activeBlog?.id)
-  const setActiveBlog = useBlogsStore((state) => state.setActiveBlog);
+  const activeBlogId = useBlogsStore((state) => state.activeBlog?.id);
   const [content, setContent] = useState<string>("");
   const [activeTab, setActiveTab] = useState<TabsType>(selectedTab || "upload");
   const [sections, setSections] = useState<OutlineSectionType[]>([]);
@@ -45,19 +47,19 @@ export const PlaygroundTabs = () => {
   const [selectedModel, setSelectedModel] = useState<ModelsType>("claude");
   const tabsAlreadySwitched = useRef<boolean>(false);
 
-  const generateBlogMutation = trpc.createOrUpdateBlog.useMutation({
-    onSuccess: (res) => {
-      console.log("res is", res);
-      const parsedData = res.data.blogData!;
-      console.log("parsed data is", parsedData);
-      setActiveBlog({id: res.data?.blogId, content: res.data.blogData});
-      setActiveTab("playground");
+  const syncChaosMutation = trpc.syncChaos.useMutation({
+    onSuccess: () => {},
+    onError: (e) => {
+      console.log("Error while syncing chaos to database", e);
     },
   });
 
-  useEffect(() => {
-    console.log("activeBlog changed:", activeBlogId);
-  }, [activeBlogId]);
+  const syncOutlineMutation = trpc.syncOutline.useMutation({
+    onSuccess: () => {},
+    onError: (e) => {
+      console.log("Error while syncing outline to database", e);
+    },
+  });
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setContent(e.target.value.trim());
@@ -67,35 +69,55 @@ export const PlaygroundTabs = () => {
     setSections([]);
     setIsScanning(true);
     socketClient.sendMessage({
-      type: "START_STREAM",
+      type: "START_OUTLINE_STREAM",
       chaos: content,
       userId: user!.id!,
       blogId: blogId,
-      selectedModel: selectedModel
+      selectedModel: selectedModel,
+    });
+
+    syncChaosMutation.mutate({
+      chaos: content,
+      userId: user!.id,
+      blogId: blogId,
     });
   };
 
   const generateBlog = () => {
     console.log("user is", user);
     console.log("active blog is", activeBlogId);
-    if (!user || !blogId) return;
-    generateBlogMutation.mutate({
-      model: selectedModel,
+    if (!user || !blogId) {
+      throw new Error("User/blog id required");
+    }
+
+    editor?.commands.clearContent()
+
+    socketClient.sendMessage({
+      type: "START_BLOG_STREAM",
+      selectedModel: selectedModel,
       outline: sections,
       userId: user!.id!,
       blogId: blogId,
     });
+
+    syncOutlineMutation.mutate({
+      outline: { sections: sections },
+      blogId: blogId,
+      userId: user.id,
+    });
   };
 
   const handleDelete = (index: number) => {
-    setSections((prev) => prev.filter((_, i) => i !== index))
-  }
+    setSections((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleUpdate = (index: number, updatedSection: OutlineSectionType) => {
     setSections((prev) =>
-      prev.map((section, i) => (i === index ? { ...section, ...updatedSection } : section))
-    )
-  }
+      prev.map((section, i) =>
+        i === index ? { ...section, ...updatedSection } : section
+      )
+    );
+  };
 
   const handleInsert = (index: number) => {
     setSections((prev) => [
@@ -104,19 +126,75 @@ export const PlaygroundTabs = () => {
         id: `new-section-${Date.now()}`,
         title: "New Section",
         description: "Add your content here",
-        isEdited: true
+        isEdited: true,
       },
-      ...prev.slice(index + 1)
-    ])
-  }
+      ...prev.slice(index + 1),
+    ]);
+  };
 
   const handleExport = (format: string) => {
-    console.log("format is", format);
+    if (!editor) return;
+
+    let content: string;
+    let filename: string;
+    let mimeType: string;
+
+    switch (format) {
+      case "html":
+        content = editor.getHTML();
+        filename = "blog-content.html";
+        mimeType = "text/html";
+
+        // Add basic HTML structure
+        content = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+      <meta charset="UTF-8">
+      <title>Blog Content</title>
+      <style>
+          body { 
+              max-width: 800px; 
+              margin: 0 auto; 
+              padding: 20px;
+              font-family: system-ui, -apple-system, sans-serif;
+          }
+      </style>
+  </head>
+  <body>
+      ${content}
+  </body>
+  </html>`;
+        break;
+
+      case "json":
+        content = JSON.stringify(editor.getJSON(), null, 2);
+        filename = "blog-content.json";
+        mimeType = "application/json";
+        break;
+
+      default:
+        throw new Error(`Unsupported format: ${format}`);
+    }
+
+    // Create blob and trigger download
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   useEffect(() => {
     console.log("new socket created");
-    socketClient.onSection((section) => {
+    outlineParser.receiveSection((section) => {
       if (!tabsAlreadySwitched.current) {
         tabsAlreadySwitched.current = true;
         setActiveTab("outline");
@@ -175,10 +253,10 @@ export const PlaygroundTabs = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     <DropdownMenuItem onSelect={() => handleExport("html")}>
-                      Export as HTML
+                      HTML
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleExport("pdf")}>
-                      Export as PDF
+                    <DropdownMenuItem onSelect={() => handleExport("json")}>
+                    JSON
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -195,7 +273,7 @@ export const PlaygroundTabs = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="">
-                <div className="mb-4">
+                <div className="flex items-center justify-between mb-4">
                   <Select
                     value={selectedModel}
                     onValueChange={(value: ModelsType) => {
@@ -212,6 +290,14 @@ export const PlaygroundTabs = () => {
                       <SelectItem value="gpt">Gpt</SelectItem>
                     </SelectContent>
                   </Select>
+                  {sections.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <InfoIcon size={14} className="text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Switch to outline tab to view blog outline
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <ScanningTextArea
                   value={content}
@@ -248,7 +334,12 @@ export const PlaygroundTabs = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1 overflow-hidden">
-              <Outline sections={sections} onDelete={handleDelete} onUpdate={handleUpdate} onInsert={handleInsert} />
+                <Outline
+                  sections={sections}
+                  onDelete={handleDelete}
+                  onUpdate={handleUpdate}
+                  onInsert={handleInsert}
+                />
               </CardContent>
             </Card>
             {/* <div className="w-fit shrink-0 mt-4"> */}

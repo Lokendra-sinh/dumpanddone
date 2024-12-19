@@ -1,26 +1,100 @@
 import { EditorContent } from "@tiptap/react";
-import {
-  CardContent,
-} from "@dumpanddone/ui";
+import { CardContent } from "@dumpanddone/ui";
 import { useEffect } from "react";
 import { CHARACTER_LIMIT } from "@/utils/constants";
 import { usePlayground } from "@/providers/playground-provider";
 import { EditorFormattingOptionsDropdown } from "./editor-formatting-options";
-import { useBlogsStore } from "@/store/useBlogsStore";
 import { SlashCommandMenu } from "./slash-commmand-menu";
+import { blogParser } from "@/socket/blog-parser";
+import { trpc } from "@/utils/trpc";
+import { useUserStore } from "@/store/useUserStore";
+import { useParams } from "@tanstack/react-router";
+import { BlogEditorRoute } from "@/routes/routes";
+import { TiptapDocument } from "@dumpanddone/types";
 
+
+function isValidTiptapDocument(doc: any): doc is TiptapDocument {
+  return (
+    doc &&
+    typeof doc === "object" &&
+    doc.type === "doc" &&
+    Array.isArray(doc.content) &&
+    doc.content.every((node) => isValidTipTapNode(node))
+  );
+}
+
+function isValidTipTapNode(node: any): boolean {
+  // Add validation for each node type
+  const validTypes = [
+    "paragraph",
+    "heading",
+    "bulletList",
+    "orderedList",
+    "codeBlock",
+    "blockquote",
+    "image",
+  ];
+  return node && typeof node === "object" && validTypes.includes(node.type);
+}
 
 export const PrimaryEditor = () => {
-  console.log("inside primary");
-  const blogData = useBlogsStore(state => state.activeBlog?.content)
-  console.log("blogDATA form editor is", blogData);
+  const userId = useUserStore((state) => state.user?.id);
+  const { blogId } = useParams({ from: BlogEditorRoute.id });
+ 
   const { editor, setSelectionInfo, setCoords } = usePlayground();
-  
+
+  const deleteAllLoadingNodes = (editor) => {
+    // Get all loading nodes and their positions along with their sizes
+    const nodesToDelete: { pos: number; size: number }[] = [];
+
+    editor.state.doc.descendants((node, pos) => {
+      if (node.type.name === "loadingNode") {
+        nodesToDelete.push({
+          pos,
+          size: node.nodeSize,
+        });
+      }
+    });
+
+    // Delete from last to first to maintain correct positions
+    nodesToDelete.reverse().forEach(({ pos, size }) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange({ from: pos, to: pos + size })
+        .run();
+    });
+  };
+
+  const scrollWithBuffer = () => {
+    const editorElement = editor!.view.dom;
+    const parentContainer = editorElement.parentElement;
+
+    // Calculate the target scroll position
+    const totalHeight = editorElement.scrollHeight;
+    const containerHeight = parentContainer!.clientHeight;
+    const buffer = 150; // Adjust this value to control how much space to leave at bottom
+
+    // Scroll the parent container
+    parentContainer!.scrollTo({
+      top: totalHeight - containerHeight + buffer,
+      behavior: "smooth",
+    });
+  };
+
+  const { mutate: syncBlog } = trpc.syncBlog.useMutation({
+    onError: (error) => {
+      console.error("Failed to sync blog:", error);
+      // Show error toast
+    },
+  });
 
   useEffect(() => {
     if (!editor) return;
 
-    editor.commands.focus()
+    console.log("editor re-rendered");
+
+    editor.commands.focus();
 
     const handleSelectionUpdate = () => {
       const { state } = editor;
@@ -69,18 +143,63 @@ export const PrimaryEditor = () => {
       editor.off("selectionUpdate", handleSelectionUpdate);
     };
   }, [editor, setCoords, setSelectionInfo]);
+  // In your component
+  useEffect(() => {
+    if (!editor) return;
 
-//   useEffect(() => {
-//     console.log("inside useeffect becoz blog data or either ediotr changed");
-//     if (editor && blogData) {
-//       console.log("setting blof data into editor", blogData);
-//         editor.commands.setContent(blogData);
-//     }
-// }, [blogData, editor]);
+    const listener = {
+      onNode: (node) => {
+        console.log("NODE in useEffect is", node);
+        deleteAllLoadingNodes(editor);
 
+        editor.commands.insertContent({
+          type: "doc",
+          content: [node],
+        });
+
+        scrollWithBuffer();
+      },
+      onState: (state) => {
+        if (state === "BLOG_COMPLETE") {
+          deleteAllLoadingNodes(editor);
+          const jsonContent = editor.getJSON();
+
+          if (isValidTiptapDocument(jsonContent)) {
+            syncBlog({
+              blog: jsonContent,
+              userId: userId!,
+              blogId: blogId,
+            });
+          } else {
+            console.error("Invalid document structure");
+          }
+          return;
+        }
+
+        deleteAllLoadingNodes(editor);
+        
+        editor.commands.insertContent({
+          type: "doc",
+          content: [
+            {
+              type: "loadingNode",
+              attrs: { message: state },
+            },
+          ],
+        });
+
+        scrollWithBuffer();
+      },
+    };
+
+    blogParser.receiveEvents(listener);
+
+    return () => {
+      blogParser.removeListener(listener);
+    };
+}, [editor, userId, blogId]);
 
   if (!editor) return null;
-
 
   return (
     <div className="w-full h-screen-minus-32 overflow-auto flex flex-col justify-center border-none">
@@ -109,5 +228,3 @@ export const PrimaryEditor = () => {
     </div>
   );
 };
-
-

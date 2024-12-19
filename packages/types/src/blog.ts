@@ -5,7 +5,7 @@ interface TiptapDocument {
   content: TipTapContentType
 }
 
-type TipTapNodeType = ParagraphNode | HeadingNode | BulletListNode | OrderedListNode | CodeBlockNode | BlockquoteNode | ImageNode
+type TipTapNodeType = ParagraphNode | HeadingNode | BulletListNode | OrderedListNode | CodeBlockNode | BlockquoteNode | ImageNode | LoadingNode
 
 type TipTapContentType = Array<
 | ParagraphNode
@@ -16,6 +16,13 @@ type TipTapContentType = Array<
 | BlockquoteNode
 | ImageNode
 >
+
+interface LoadingNode {
+  type: "loadingNode";
+  attrs: {
+    message: string;
+  };
+}
 interface ParagraphNode {
   type: "paragraph";
   attrs?: {
@@ -99,6 +106,7 @@ export {
   TiptapDocument,
   TipTapContentType,
   TipTapNodeType,
+  LoadingNode,
   ParagraphNode,
   HardBreakNode,
   HeadingNode,

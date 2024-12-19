@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { ReactNode } from "@tanstack/react-router";
-import { socketClient } from "@/utils/socket";
+import { socketClient } from "@/socket/socket-client";
 import {  TiptapDocument } from "@dumpanddone/types";
 
 interface DashboardContextType {

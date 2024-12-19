@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS "blogs" (
-	"id" uuid DEFAULT gen_random_uuid(),
+	"id" uuid DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"last_updated" timestamp with time zone DEFAULT now() NOT NULL,
-	"chaos" jsonb NOT NULL,
+	"chaos" text NOT NULL,
 	"outline" jsonb NOT NULL,
 	"blog" jsonb NOT NULL
 );

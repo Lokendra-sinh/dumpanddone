@@ -1,120 +1,176 @@
-import { useBlogsStore } from "@/store/useBlogsStore";
 import { ModelsType, OutlineSectionType } from "@dumpanddone/types";
-import { outlineParser } from "./outline-parser";
-import { blogParser } from "./blog-parser";
+import { streamManager } from "./stream-manager";
 
 interface SendMessageProps {
-  type: "START_OUTLINE_STREAM" | "STOP_OUTLINE_STREAM" | "START_BLOG_STREAM" | "STOP_BLOG_STREAM"
+  type:
+    | "START_OUTLINE_STREAM"
+    | "STOP_OUTLINE_STREAM"
+    | "START_BLOG_STREAM"
+    | "STOP_BLOG_STREAM"
+    | "START_EDIT_STREAM"
+    | "STOP_EDIT_STREAM"
+    | "ABORT_STREAM"
   chaos?: string;
+  requestId?: string
   userId: string;
-  blogId: string;
-  selectedModel: ModelsType
-  outline?: OutlineSectionType[]
+  blogId?: string;
+  selectedModel?: ModelsType;
+  outline?: OutlineSectionType[];
 }
 
-class SocketClient {
-  private socket: WebSocket | null = null;
-  private readonly url: string;
-  private currentlyparsing: "blog" | "outline" = "outline"
+// WebSocket ready states
+enum WebSocketState {
+  CONNECTING = 0,
+  OPEN = 1,
+  CLOSING = 2,
+  CLOSED = 3
+}
+
+export class SocketClient {
+  private url: string
+  private socket: WebSocket | null = null
+  private messageHandler?: (event: MessageEvent) => void
+  private disconnectHandler?: (code: number, reason: string) => void
+  private errorHandler?: (error: Event) => void
+  private reconnectAttempts = 0
+  private readonly MAX_RECONNECT_ATTEMPTS = 3
   
-
-
-  constructor() {
-    this.url = "ws://localhost:4000";
+  constructor(url: string) {
+    this.url = url
   }
 
   connect() {
+    if (this.socket?.readyState === WebSocketState.OPEN) {
+      console.warn('Socket is already connected')
+      return
+    }
+
     try {
-      this.socket = new WebSocket(this.url);
+      this.socket = new WebSocket(this.url)
 
       this.socket.onopen = () => {
-        console.log("connected to websocket server");
-      };
+        console.log("Socket connection established successfully!")
+        this.reconnectAttempts = 0 // Reset reconnect attempts on successful connection
+      }
 
-      this.socket.onmessage = (event) => {
-        // console.log("event is", event);
+      this.socket.onmessage = (event: MessageEvent) => {
         try {
-          const parsed = JSON.parse(event.data);
-
-          if (parsed.type === "OUTLINE_START") {
-            const activeBlogId = useBlogsStore.getState().activeBlog;
-            if(activeBlogId !== parsed.blogId){
-              throw new Error("Blog Ids does not match")
-            }
-            this.currentlyparsing = "outline"
-            return;
-          }
-
-
-          if (parsed.type === "BLOG_START") {
-            // const activeBlogId = useBlogsStore.getState().activeBlog;
-            // if(activeBlogId !== parsed.blogId){
-            //   throw new Error("Blog Ids does not match")
-            // }
-            this.currentlyparsing = "blog"
-            blogParser.blogState = "BUILDING"
-            return;
-          }
-
-          if (parsed.type === "OUTLINE_COMPLETE") {
-             outlineParser.parse(event)
-             return;
-          }
-
-          if(parsed.type === "BLOG_COMPLETE"){
-            blogParser.parse(event)
-            return
-          }
-
-          if(parsed.type === "BLOG_CHUNK"){
-            blogParser.parse(event)
-          }
-
-        } catch {
-          // console.log("error is", e);
-          switch(this.currentlyparsing){
-            case "outline":
-                outlineParser.parse(event)
-                break;
-            case "blog":
-                blogParser.parse(event)
-                break;
-                
-          }
+          // Parse to validate it's JSON but use original event
+          JSON.parse(event.data)
+          console.log("Event recieved from backend is", event);
+          this.messageHandler?.(event)
+        } catch (error) {
+          console.error("Failed to parse incoming message:", error)
+          this.errorHandler?.(new Event('parse_error'))
         }
-      };
+      }
 
-      this.socket.onerror = (error) => {
-        console.error("WebSocket error:", error);
-      };
+      this.socket.onerror = (error: Event) => {
+        console.error("WebSocket error:", error)
+        this.errorHandler?.(error)
+        this.handleReconnection()
+      }
 
-      this.socket.onclose = (event) => {
-        console.log(
-          "Disconnected from WebSocket server:",
-          event.code,
-          event.reason
-        );
-        // You might want to implement reconnection logic here
-      };
-    } catch (e) {
-      console.error("Failed to connect to WebSocket server:", e);
+      this.socket.onclose = (event: CloseEvent) => {
+        console.warn(
+          `Socket connection closed: [${event.code}] ${event.reason || 'No reason provided'}`
+        )
+        
+        // Only try to reconnect if it wasn't a clean close
+        if (!event.wasClean) {
+          this.handleReconnection()
+        }
+        
+        this.disconnectHandler?.(event.code, event.reason)
+      }
+    } catch (error) {
+      console.error("Failed to establish WebSocket connection:", error)
+      this.errorHandler?.(new Event('connection_error'))
+      this.handleReconnection()
+    }
+  }
+
+  private handleReconnection() {
+    if (this.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS) {
+      this.reconnectAttempts++
+      const backoffTime = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000)
+      
+      console.log(
+        `Attempting reconnection ${this.reconnectAttempts}/${this.MAX_RECONNECT_ATTEMPTS} ` +
+        `in ${backoffTime}ms...`
+      )
+      
+      setTimeout(() => this.connect(), backoffTime)
+    } else {
+      console.error('Max reconnection attempts reached')
+      this.errorHandler?.(new Event('max_reconnect_attempts_reached'))
     }
   }
 
   sendMessage(message: SendMessageProps) {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify(message));
-    } else {
-      console.error("WebSocket is not connected");
+    if (!this.isConnected()) {
+      throw new Error("Cannot send message: WebSocket is not connected")
+    }
+
+    try {
+      this.socket!.send(JSON.stringify(message))
+    } catch (error) {
+      console.error("Failed to send message:", error)
+      throw error
     }
   }
 
-  disconnect() {
+  disconnect(code: number = 1000, reason: string = "Client disconnecting") {
     if (this.socket) {
-      this.socket.close();
-      this.socket = null;
+      try {
+        this.socket.close(code, reason)
+      } catch (error) {
+        console.error("Error during disconnect:", error)
+      } finally {
+        this.socket = null
+        this.reconnectAttempts = 0 // Reset reconnect attempts
+      }
     }
+  }
+
+  isConnected(): boolean {
+    return this.socket?.readyState === WebSocketState.OPEN
+  }
+
+  // Handler setters with type safety
+  setMessageHandler(handler: (event: MessageEvent) => void) {
+    this.messageHandler = handler
+  }
+
+  setErrorHandler(handler: (error: Event) => void) {
+    this.errorHandler = handler
+  }
+
+  setDisconnectHandler(handler: (code: number, reason: string) => void) {
+    this.disconnectHandler = handler
+  }
+
+  // Handler removers
+  removeMessageHandler() {
+    this.messageHandler = undefined
+  }
+
+  removeErrorHandler() {
+    this.errorHandler = undefined
+  }
+
+  removeDisconnectHandler() {
+    this.disconnectHandler = undefined
+  }
+
+  // Get current socket state
+  getState(): WebSocketState {
+    return this.socket?.readyState ?? WebSocketState.CLOSED
   }
 }
 
-export const socketClient = new SocketClient();
+export const socketClient = new SocketClient(import.meta.env.VITE_WEBSOCKET_URL_LOCAL)
+
+// Set up default handlers
+socketClient.setErrorHandler((error) => console.error("Socket Error:", error))
+socketClient.setMessageHandler((event: MessageEvent) => streamManager.receiver(event))

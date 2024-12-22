@@ -1,4 +1,4 @@
-import { Button } from "@dumpanddone/ui";
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@dumpanddone/ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@dumpanddone/ui";
 import {
   Card,
@@ -18,7 +18,6 @@ import {
 } from "@dumpanddone/ui";
 import { Upload, Palette, FileDown, Loader2, InfoIcon } from "lucide-react";
 import { useUserStore } from "@/store/useUserStore";
-import { useBlogsStore } from "@/store/useBlogsStore";
 import { useEffect, useRef, useState } from "react";
 import { ModelsType, OutlineSectionType } from "@dumpanddone/types";
 import { socketClient } from "@/socket/socket-client";
@@ -30,6 +29,7 @@ import { BlogEditorRoute } from "@/routes/routes";
 import { outlineParser } from "@/socket/outline-parser";
 import { trpc } from "@/utils/trpc";
 import { usePlayground } from "@/providers/playground-provider";
+import { streamManager } from "@/socket/stream-manager";
 
 type TabsType = "upload" | "outline" | "playground";
 
@@ -39,13 +39,16 @@ export const PlaygroundTabs = () => {
   const { selectedTab } = useSearch({ from: BlogEditorRoute.id });
   const user = useUserStore((state) => state.user);
   const setModelInZustand = useUserStore((state) => state.setSelectedModel);
-  const activeBlogId = useBlogsStore((state) => state.activeBlog?.id);
   const [content, setContent] = useState<string>("");
   const [activeTab, setActiveTab] = useState<TabsType>(selectedTab || "upload");
   const [sections, setSections] = useState<OutlineSectionType[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelsType>("claude");
-  const tabsAlreadySwitched = useRef<boolean>(false);
+  const [showStreamDialog, setShowStreamDialog] = useState(false);
+  const [pendingOperation, setPendingOperation] = useState<'outline' | 'blog' | null>(null);
+  const [isAborting, setIsAborting] = useState<boolean>(false)
+  const processedSections = useRef(new Set());
+
 
   const syncChaosMutation = trpc.syncChaos.useMutation({
     onSuccess: () => {},
@@ -65,8 +68,40 @@ export const PlaygroundTabs = () => {
     setContent(e.target.value.trim());
   };
 
-  const generateBlogOultine = () => {
+  const generateBlogOutline = async () => {
+    const currentStream = streamManager.getStreamStatus();
+    
+    if (currentStream) {
+      setShowStreamDialog(true);
+      setPendingOperation('outline');
+      return;
+    }
+
+    startOutlineGeneration();
+  };
+
+  
+  const generateBlog = async () => {
+    if (!user || !blogId) {
+      throw new Error("User/blog id required");
+    }
+
+    const currentStream = streamManager.getStreamStatus();
+    
+    if (currentStream) {
+      setShowStreamDialog(true);
+      setPendingOperation('blog');
+      return;
+    }
+
+    // Actual generation logic
+    startBlogGeneration();
+  };
+
+
+  const startOutlineGeneration = () => {
     setSections([]);
+    processedSections.current.clear(); 
     setIsScanning(true);
     socketClient.sendMessage({
       type: "START_OUTLINE_STREAM",
@@ -83,15 +118,8 @@ export const PlaygroundTabs = () => {
     });
   };
 
-  const generateBlog = () => {
-    console.log("user is", user);
-    console.log("active blog is", activeBlogId);
-    if (!user || !blogId) {
-      throw new Error("User/blog id required");
-    }
-
-    editor?.commands.clearContent()
-
+  const startBlogGeneration = () => {
+    editor?.commands.clearContent();
     socketClient.sendMessage({
       type: "START_BLOG_STREAM",
       selectedModel: selectedModel,
@@ -103,8 +131,26 @@ export const PlaygroundTabs = () => {
     syncOutlineMutation.mutate({
       outline: { sections: sections },
       blogId: blogId,
-      userId: user.id,
+      userId: user!.id,
     });
+  };
+
+  const handleConfirmAbort = async () => {
+    setIsAborting(true)
+   await streamManager.abortStream();
+    editor?.commands.clearContent()
+    setIsAborting(false)
+    // Start the pending operation
+    if (pendingOperation === 'outline') {
+      startOutlineGeneration();
+    } else if (pendingOperation === 'blog') {
+      startBlogGeneration();
+    }
+
+    // Reset dialog state
+    setShowStreamDialog(false);
+    setPendingOperation(null);
+    setActiveTab("outline")
   };
 
   const handleDelete = (index: number) => {
@@ -193,26 +239,28 @@ export const PlaygroundTabs = () => {
   };
 
   useEffect(() => {
-    console.log("new socket created");
-    outlineParser.receiveSection((section) => {
-      if (!tabsAlreadySwitched.current) {
-        tabsAlreadySwitched.current = true;
-        setActiveTab("outline");
-      }
+    if(user){
+      streamManager.initialize(user.id)
+    }
+  },[user])
 
-      if (section.title === "OUTLINE_COMPLETE") {
+  useEffect(() => {
+    outlineParser.subscribe((section) => {
+      if (section.title === "OUTLINE_END") {
         setIsScanning(false);
+        processedSections.current.clear(); // Clear on end
         return;
       }
-
-      const isDuplicateSection = sections.find(
-        (s) =>
-          s.title === section.title || s.description === section.description
-      );
-      console.log("SECTION is", section);
-      if (isDuplicateSection) return;
-
-      setSections((prev) => [...prev, section]);
+  
+      setSections((prev) => {
+        // Check our ref instead of previous state
+        if (processedSections.current.has(section.id)) {
+          return prev;
+        }
+        
+        processedSections.current.add(section.id);
+        return [...prev, section];
+      });
     });
   }, []);
 
@@ -306,8 +354,8 @@ export const PlaygroundTabs = () => {
                 />
                 <Button
                   className="w-fit mt-4 shrink-0 bg-gradient-to-b from-[#1a1a1c] to-[#3d3e43] hover:opacity-90 transition-opacity"
-                  onClick={generateBlogOultine}
-                  disabled={isScanning}
+                  onClick={generateBlogOutline}
+                  disabled={isScanning || !content.length}
                 >
                   {isScanning ? (
                     <>
@@ -326,7 +374,7 @@ export const PlaygroundTabs = () => {
             value="outline"
             className="h-[calc(100vh-160px)] flex flex-col gap-4"
           >
-            <Card className="flex-1 flex flex-col overflow-hidden">
+            <Card className={`flex-1 flex flex-col overflow-hidden ${isScanning && "animate-border-pulse"}`}>
               <CardHeader className="shrink-0">
                 <CardTitle>Blog Outline</CardTitle>
                 <CardDescription>
@@ -346,7 +394,7 @@ export const PlaygroundTabs = () => {
             <Button
               className="w-fit shrink-0 bg-gradient-to-b from-[#1a1a1c] to-[#3d3e43] hover:opacity-90 transition-opacity"
               onClick={() => generateBlog()}
-              disabled={isScanning}
+              disabled={isScanning || !sections.length}
             >
               {isScanning ? (
                 <>
@@ -372,6 +420,41 @@ export const PlaygroundTabs = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={showStreamDialog} onOpenChange={setShowStreamDialog}>
+        <DialogContent className={`${isAborting && "pointer-events-none"}`}>
+          <DialogHeader>
+            <DialogTitle>Stream in Progress</DialogTitle>
+            <DialogDescription>
+              There's an active stream running. Starting a new generation will cancel the current progress. Are you sure you want to continue?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowStreamDialog(false);
+              setPendingOperation(null);
+            }}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmAbort}>
+            {isAborting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Aborting stream...
+                </>
+              ) : (
+                "YES, start new"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
+
+
+
+
+
+

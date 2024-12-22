@@ -49,6 +49,7 @@ REQUIRED BLOG STRUCTURE:
    - Hook/attention grabber
    - Context setting
    - Main thesis/purpose
+   - Should glue the users to keep reading
 
 3. Main Content Sections:
    - Follow provided outline
@@ -60,41 +61,34 @@ REQUIRED BLOG STRUCTURE:
    - Key takeaways
    - Final thoughts/call to action
 
-STATE MESSAGE HIERARCHY:
-Level 1 (Major States) - For main sections:
-- 5-10 words, thorough analysis
-- Must show intelligent processing
-- Examples:
-  "Crafting an engaging title from your experience..."
-  "Developing your key insights about [topic]..."
-  "Synthesizing your thoughts on [concept]..."
+STATE MESSAGES:
+- Keep messages concise and informative
+- Show current generation progress
+Examples:
+"Crafting attention-grabbing title..."
+"Adding author info..."
+"Creating introduction..."
+"Expanding on [specific topic]..."
+"Adding code example..."
+"Summarizing key points..."
 
-Level 2 (Minor States) - For individual nodes:
-- 3-5 words, quick updates
-- Shows continuous progress
-- Examples:
-  "Adding code example..."
-  "Expanding key point..."
-  "Creating example list..."
+STREAMING FORMAT (EXTREMELY CRITICAL):
+You must stream content in alternating state and node pairs using XML-style tags:
 
-STREAMING PROCESS:
-1. START_STREAM
+<s>state message here</s>
+<n>tiptap json node here</n>
+<s>another state message</s>
+<n>another tiptap node</n>
 
-2. Title Block:
-   STATE(L1): "Crafting attention-grabbing title..."
-   NODE: {title}
-   STATE(L2): "Adding author info..."
-   NODE: {author}
-   STATE(L2): "Calculating read time..."
-   NODE: {read time}
+CRITICAL FORMAT RULES:
+- No newlines between tags
+- State messages must be wrapped in <s>...</s>
+- Nodes must be wrapped in <n>...</n>
+- Tags must be in strict alternating order
+- Each node must be valid TIPTAP JSON
 
-3. For each main section:
-   STATE(L1): {Section-level analysis}
-   For each node in section:
-     STATE(L2): {Node-specific update}
-     NODE: {content}
-
-4. END_STREAM
+Example stream (without newlines):
+<s>Creating title...</s><n>{"type":"heading","attrs":{"level":1},"content":[{"type":"text","text":"Example Title"}]}</n><s>Adding author...</s><n>{"type":"paragraph","content":[{"type":"text","text":"By Author"}]}</n>
 
 QUALITY REQUIREMENTS (NEVER COMPROMISE):
 - Title must be engaging and relevant
@@ -118,30 +112,19 @@ TOKEN MANAGEMENT:
 - Maintain quality within limits
 
 INPUT SOURCE:
-<chaos>
-${chaos}
-</chaos>
+<chaos>${chaos}</chaos>
 
 OUTLINE TO FOLLOW:
-<outline>
-${outline
-  .map(
-    (section) => `
-  Section Title: ${section.title}
-  Section Description: ${section.description}
-  Priority: ${section.isEdited ? "HIGH" : "NORMAL"}
-`
-  )
-  .join("\n")}
-</outline>
+<outline>${outline.map((section) => `Section Title: ${section.title}Section Description: ${section.description}Priority: ${section.isEdited ? "HIGH" : "NORMAL"}`).join("")}</outline>
 
 CRITICAL RULES:
 1. Never skip title block components
 2. Maintain quality while showing progress
-3. Use appropriate state level for context
-4. Keep content engaging and varied
-5. Follow outline structure precisely
-6. Preserve user's voice consistently
+3. Keep content engaging and varied
+4. Follow outline structure precisely
+5. Preserve user's voice consistently
+6. Stream tokens without newlines
+7. ALWAYS use <s>...</s> for states and <n>...</n> for nodes
 
 Begin streaming now.`;
 };

@@ -1,129 +1,136 @@
 import { TipTapNodeType } from "@dumpanddone/types";
 
-
+type StreamType = 'WRITE_BLOG' | 'EDIT_BLOG';
 type BlogParserListener = {
- onState: (state: string) => void;
- onNode: (node: TipTapNodeType) => void;
+  onState: (state: string) => void;
+  onNode: (node: TipTapNodeType) => void;
 };
 
-type BlogState = "WAITING" | "BUILDING"
+enum ParserState {
+  WAITING,
+  LOOKING_FOR_TAG,
+  COLLECTING_STATE,
+  COLLECTING_NODE,
+}
 
-class BlogParser {
- private buffer: string = "";
- private isStarted: boolean = false;
- private listeners: BlogParserListener[] = [];
- public blogState: BlogState = "WAITING"
+export class BlogParser {
+  private currentState = ParserState.LOOKING_FOR_TAG;
+  private buffer = "";
+  private currentStream: StreamType | null = null;
+  
+  private writeBlogListeners: BlogParserListener[] = [];
+  private editBlogListeners: BlogParserListener[] = [];
 
- receiveEvents(listener: BlogParserListener) {
-   this.listeners.push(listener);
- }
+  setStreamType(type: StreamType) {
+    this.reset();
+    this.currentStream = type;
+  }
 
- removeListener(listener: BlogParserListener) {
-   this.listeners = this.listeners.filter(l => l !== listener);
- }
+  subscribeToWriteBlog(listener: BlogParserListener) {
+    this.writeBlogListeners.push(listener);
+  }
 
- private emitState(state: string) {
-   console.log("🔄 State built:", state);
-   this.listeners.forEach((listener) => listener.onState(state));
- }
+  subscribeToEditBlog(listener: BlogParserListener) {
+    this.editBlogListeners.push(listener);
+  }
 
- private emitNode(node: TipTapNodeType) {
-   console.log("📦 Node built:", node);
-   this.listeners.forEach((listener) => listener.onNode(node));
- }
+  unsubscribeFromWriteBlog(listener: BlogParserListener) {
+    this.writeBlogListeners = this.writeBlogListeners.filter(l => l !== listener);
+  }
 
- parse(event: any) {
-   try {
-     const parsed = JSON.parse(event.data);
+  unsubscribeFromEditBlog(listener: BlogParserListener) {
+    this.editBlogListeners = this.editBlogListeners.filter(l => l !== listener);
+  }
 
-     if (parsed.type === "BLOG_COMPLETE") {
-       this.emitState("BLOG_COMPLETE");
-       this.blogState = "WAITING"
-       return;
-     }
+  private emitState(state: string) {
+    const listeners = this.currentStream === 'WRITE_BLOG' 
+      ? this.writeBlogListeners 
+      : this.editBlogListeners;
+    
+    console.log(`📢 EMIT STATE: "${state}" to ${listeners.length} listeners`);
+    
+    try {
+      listeners.forEach(listener => listener.onState(state));
+      console.log('✅ State emitted successfully');
+    } catch (e) {
+      console.error('❌ State emission failed:', e);
+    }
+  }
 
-     if (parsed.type === "BLOG_CHUNK") {
-       this.buffer += parsed.content;
-       this.processBuffer();
-     }
-   } catch (e) {
-     console.error("Error in parse:", e);
-   }
- }
+  private emitNode(node: TipTapNodeType) {
+    const listeners = this.currentStream === 'WRITE_BLOG' 
+      ? this.writeBlogListeners 
+      : this.editBlogListeners;
+    
+    console.log('📦 EMIT NODE:', JSON.stringify(node))
+    
+    try {
+      listeners.forEach(listener => listener.onNode(node));
+      console.log('✅ Node emitted successfully');
+    } catch (e) {
+      console.error('❌ Node emission failed:', e);
+    }
+  }
 
- private extractCompleteNode(startIndex: number): { node: TipTapNodeType | null, endIndex: number } {
-   let bracketCount = 1;
-   let currentIndex = startIndex + 1;
-   
-   while (currentIndex < this.buffer.length && bracketCount > 0) {
-     if (this.buffer[currentIndex] === "{") bracketCount++;
-     if (this.buffer[currentIndex] === "}") bracketCount--;
-     currentIndex++;
-   }
+  parse(event: any) {
+    try {
+      const parsed = JSON.parse(event.data);
+      if (!parsed.content) return;
+      
+      const eventType = `${this.currentStream === 'WRITE_BLOG' ? 'BLOG' : 'EDIT_BLOG'}_PROGRESS`;
+      if (parsed.type === eventType) {
+        this.processContent(parsed.content);
+      }
+    } catch (e) {
+      console.error('❌ Parse error:', e);
+    }
+  }
 
-   if (bracketCount === 0) {
-     try {
-       const jsonStr = this.buffer.slice(startIndex, currentIndex);
-       const parsedNode = JSON.parse(jsonStr);
-       return { node: parsedNode, endIndex: currentIndex };
-     } catch (e) {
-       console.error("Failed to parse NODE object:", e);
-     }
-   }
-   
-   return { node: null, endIndex: startIndex };
- }
+  private processContent(content: string) {
+    for (const char of content) {
+      this.buffer += char;
 
- private processBuffer() {
-   while (this.buffer.length > 0) {
-     if (!this.isStarted && this.buffer.includes("START_STREAM")) {
-       this.isStarted = true;
-       this.buffer = this.buffer.slice(
-         this.buffer.indexOf("START_STREAM") + "START_STREAM".length
-       );
-       continue;
-     }
+      switch (this.currentState) {
+        case ParserState.LOOKING_FOR_TAG:
+          if (this.buffer.endsWith('<s>')) {
+            this.buffer = '';
+            this.currentState = ParserState.COLLECTING_STATE;
+          } else if (this.buffer.endsWith('<n>')) {
+            this.buffer = '';
+            this.currentState = ParserState.COLLECTING_NODE;
+          }
+          break;
 
-     if (this.buffer.includes("END_STREAM")) {
-       this.isStarted = false;
-       this.buffer = "";
-       break;
-     }
+        case ParserState.COLLECTING_STATE:
+          if (this.buffer.endsWith('</s>')) {
+            const stateContent = this.buffer.slice(0, -4).trim();
+            this.emitState(stateContent);
+            this.buffer = '';
+            this.currentState = ParserState.LOOKING_FOR_TAG;
+          }
+          break;
 
-     if (this.buffer.includes("STATE:")) {
-       const stateStart = this.buffer.indexOf("STATE:");
-       const stateEnd = this.buffer.indexOf("\n", stateStart);
-       if (stateEnd === -1) break;
+        case ParserState.COLLECTING_NODE:
+          if (this.buffer.endsWith('</n>')) {
+            const nodeContent = this.buffer.slice(0, -4);
+            try {
+              const node = JSON.parse(nodeContent);
+              this.emitNode(node);
+            } catch {
+              console.error('❌ Node parse failed:', nodeContent);
+            }
+            this.buffer = '';
+            this.currentState = ParserState.LOOKING_FOR_TAG;
+          }
+          break;
+      }
+    }
+  }
 
-       const state = this.buffer.slice(stateStart + 6, stateEnd).trim();
-       this.emitState(state);
-       this.buffer = this.buffer.slice(stateEnd + 1);
-       continue;
-     }
-
-     if (this.buffer.includes("NODE:")) {
-       const nodeStart = this.buffer.indexOf("NODE:") + 5;
-       const jsonStartIndex = this.buffer.indexOf("{", nodeStart);
-       
-       if (jsonStartIndex === -1) break;
-       
-       const { node, endIndex } = this.extractCompleteNode(jsonStartIndex);
-       if (!node) break;
-
-       this.emitNode(node);
-       this.buffer = this.buffer.slice(endIndex);
-       continue;
-     }
-
-     break;
-   }
- }
-
- reset() {
-   this.buffer = "";
-   this.isStarted = false;
-   this.listeners = [];
- }
+  reset() {
+    this.currentState = ParserState.LOOKING_FOR_TAG;
+    this.buffer = '';
+  }
 }
 
 export const blogParser = new BlogParser();

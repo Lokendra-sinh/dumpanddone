@@ -143,27 +143,24 @@ export const PrimaryEditor = () => {
       editor.off("selectionUpdate", handleSelectionUpdate);
     };
   }, [editor, setCoords, setSelectionInfo]);
-  // In your component
+
   useEffect(() => {
     if (!editor) return;
-
+  
     const listener = {
       onNode: (node) => {
         console.log("NODE in useEffect is", node);
         deleteAllLoadingNodes(editor);
-
         editor.commands.insertContent({
           type: "doc",
           content: [node],
         });
-
         scrollWithBuffer();
       },
       onState: (state) => {
-        if (state === "BLOG_COMPLETE") {
+        if (state === "WRITE_BLOG_END") {  // Changed from BLOG_COMPLETE
           deleteAllLoadingNodes(editor);
           const jsonContent = editor.getJSON();
-
           if (isValidTiptapDocument(jsonContent)) {
             syncBlog({
               blog: jsonContent,
@@ -175,9 +172,8 @@ export const PrimaryEditor = () => {
           }
           return;
         }
-
+  
         deleteAllLoadingNodes(editor);
-        
         editor.commands.insertContent({
           type: "doc",
           content: [
@@ -187,17 +183,16 @@ export const PrimaryEditor = () => {
             },
           ],
         });
-
         scrollWithBuffer();
       },
     };
-
-    blogParser.receiveEvents(listener);
-
+  
+    blogParser.subscribeToWriteBlog(listener);
+  
     return () => {
-      blogParser.removeListener(listener);
+      blogParser.unsubscribeFromWriteBlog(listener);
     };
-}, [editor, userId, blogId]);
+  }, [editor, userId, blogId]);
 
   if (!editor) return null;
 

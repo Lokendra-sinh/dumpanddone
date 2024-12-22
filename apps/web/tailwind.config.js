@@ -14,31 +14,31 @@ export default {
       height: {
         "screen-minus-16": "calc(100vh - 64px)",
         "screen-minus-32": "calc(100vh - 160px)",
-        "content": "calc(100vh - 64px)",
+        content: "calc(100vh - 64px)",
         "screen-minus-48": "calc(100vh - 260px)",
       },
       keyframes: {
-		'gradient-y': {
-          '0%, 100%': {
-            'background-size': '100% 400%',
-            'background-position': '0% 0%'
+        "gradient-y": {
+          "0%, 100%": {
+            "background-size": "100% 400%",
+            "background-position": "0% 0%",
           },
-          '50%': {
-            'background-size': '100% 400%',
-            'background-position': '0% 100%'
+          "50%": {
+            "background-size": "100% 400%",
+            "background-position": "0% 100%",
           },
         },
-		'scan-line': {
-			'0%': {
-			  transform: 'translateY(0)',
-			},
-			'50%': {
-				transform: 'translateY(396px)', // match container height
-			},
-			'100%': {
-			  transform: 'translateY(0)',
-			}
-		  },
+        "scan-line": {
+          "0%": {
+            transform: "translateY(0)",
+          },
+          "50%": {
+            transform: "translateY(396px)", // match container height
+          },
+          "100%": {
+            transform: "translateY(0)",
+          },
+        },
         "shadow-pulse": {
           "0%": {
             boxShadow: "0 0 5px 5px rgba(168, 85, 247, 0.5)",
@@ -48,6 +48,20 @@ export default {
           },
           "100%": {
             boxShadow: "0 0 80px 15px rgba(168, 85, 247, 0.5)",
+          },
+        },
+        "border-pulse": {
+          "0%": {
+            borderColor: "hsl(var(--border) / 0.1)",
+            boxShadow: "0 0 0 0 hsl(var(--border) / 0.1)",
+          },
+          "50%": {
+            borderColor: "hsl(var(--border) / 0.3)",
+            boxShadow: "0 0 0 4px hsl(var(--border) / 0.8)",
+          },
+          "100%": {
+            borderColor: "hsl(var(--border) / 0.1)",
+            boxShadow: "0 0 0 0 hsl(var(--border) / 0.1)",
           },
         },
         "dashboard-glow": {
@@ -66,8 +80,9 @@ export default {
         "dashboard-glow": "dashboard-glow 6s ease-in-out",
         "shadow-pulse": "shadow-pulse 6s ease-in-out",
         "animate-scan": "scan 2s ease-in-out infinite",
-'scan-line': 'scan-line 2s ease-in-out infinite',
-'gradient-y': 'gradient-y 2s ease-in-out infinite',
+        "scan-line": "scan-line 2s ease-in-out infinite",
+        "gradient-y": "gradient-y 2s ease-in-out infinite",
+        "border-pulse": "border-pulse 2s ease-in-out infinite",
       },
       colors: {
         background: "hsl(var(--background))",

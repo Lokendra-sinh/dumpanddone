@@ -3,10 +3,12 @@ import { anthropic, deepseekAi, openai } from "..";
 import { outlineGeneratorPrompt } from "../prompts/generate-outline-instructions";
 import { ModifiedWebSocketInstanceType, RequestStateType } from "../ws/socket";
 
-
-
-async function streamWithClaude(content: string, ws: ModifiedWebSocketInstanceType) {
-     anthropic.messages.stream({
+async function streamWithClaude(
+    content: string, 
+    ws: ModifiedWebSocketInstanceType,
+    metadata: { userId: string; blogId: string; selectedModel: ModelsType }
+) {
+    anthropic.messages.stream({
         model: "claude-3-5-sonnet-20241022",
         max_tokens: 4096,
         messages: [
@@ -16,18 +18,24 @@ async function streamWithClaude(content: string, ws: ModifiedWebSocketInstanceTy
             }
         ],
     }).on('text', (text) => {
-        ws.send(text)
+        ws.send(JSON.stringify({
+            type: "OUTLINE_PROGRESS",
+            content: text,
+            ...metadata
+        }))
     })
 }
 
-async function streamWithDeepseek(content: string, ws: ModifiedWebSocketInstanceType) {
+async function streamWithDeepseek(
+    content: string, 
+    ws: ModifiedWebSocketInstanceType,
+    metadata: { userId: string; blogId: string; selectedModel: ModelsType }
+) {
     const stream = await deepseekAi.chat.completions.create({
-        messages: [
-            { 
-                role: "user", 
-                content: outlineGeneratorPrompt(content) 
-            }
-        ],
+        messages: [{ 
+            role: "user", 
+            content: outlineGeneratorPrompt(content) 
+        }],
         model: "deepseek-chat",
         temperature: 1.5,
         stream: true
@@ -36,12 +44,20 @@ async function streamWithDeepseek(content: string, ws: ModifiedWebSocketInstance
     for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content;
         if (content) {
-            ws.send(content);
+            ws.send(JSON.stringify({
+                type: "OUTLINE_PROGRESS",
+                content: content,
+                ...metadata
+            }));
         }
     }
 }
 
-async function streamWithGPT(content: string, ws: ModifiedWebSocketInstanceType) {
+async function streamWithGPT(
+    content: string, 
+    ws: ModifiedWebSocketInstanceType,
+    metadata: { userId: string; blogId: string; selectedModel: ModelsType }
+) {
     const stream = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -56,41 +72,57 @@ async function streamWithGPT(content: string, ws: ModifiedWebSocketInstanceType)
     for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content;
         if (content) {
-            ws.send(content);
+            ws.send(JSON.stringify({
+                type: "OUTLINE_PROGRESS",
+                content: content,
+                ...metadata
+            }));
         }
     }
 }
 
-export async function startOutlineStreaming(
-    content: string, 
-    requestState: RequestStateType,
-    model: ModelsType = "gpt"
-) {
-    const { blogId, ws, userId } = requestState
+interface StartOutlineStreamingProps {
+    chaos: string,
+    selectedModel: ModelsType,
+    requestState: RequestStateType
+}
+
+export async function startOutlineStreaming(props: StartOutlineStreamingProps) {
+    const { chaos, requestState, selectedModel} = props
+    const { blogId, ws, userId, requestId } = requestState
+
+    // Create consistent metadata object
+    const metadata = {
+        userId,
+        blogId,
+        selectedModel: selectedModel,
+        requestId: requestId
+    }
+
     try {
         ws.send(JSON.stringify({
             type: "OUTLINE_START",
-            blogId: blogId
+            ...metadata
         }))
 
         // Stream based on selected model
-        switch (model) {
+        switch (selectedModel) {
             case "claude":
-                await streamWithClaude(content, ws);
+                await streamWithClaude(chaos, ws, metadata);
                 break;
             case "deepseek":
-                await streamWithDeepseek(content, ws);
+                await streamWithDeepseek(chaos, ws, metadata);
                 break;
             case "gpt":
-                await streamWithGPT(content, ws);
+                await streamWithGPT(chaos, ws, metadata);
                 break;
             default:
-                throw new Error(`Unsupported model: ${model}`);
+                throw new Error(`Unsupported model: ${selectedModel}`);
         }
 
         ws.send(JSON.stringify({
-            type: "OUTLINE_COMPLETE",
-            blogId: blogId
+            type: "OUTLINE_END",
+            ...metadata
         }))
 
     } catch (error) {
@@ -98,7 +130,7 @@ export async function startOutlineStreaming(
         ws.send(JSON.stringify({
             type: 'OUTLINE_ERROR',
             error: error,
-            blogId: blogId
+            ...metadata
         }));
     }
 }

@@ -2,178 +2,306 @@ import {
   ModelsType,
   TipTapContentType,
   TiptapDocument,
+  TipTapNodeType,
 } from "@dumpanddone/types";
 import { MODEL_CONFIGS } from "./generate-blog-instructions";
 
 export const blogContentUpdatePrompt = (
   userQuery: string,
-  selectedContent: TipTapContentType,
+  selectedContent: TipTapNodeType[],
   blogData: TiptapDocument,
   model: ModelsType = "claude"
 ) => {
   const { targetTokens } = MODEL_CONFIGS[model];
 
-  return `You are an expert blog content updater and Tiptap JSON generator. Your task is to modify, enhance, or restructure the selected content based on the user's query while maintaining consistency with the overall blog context and structure.
-  
-  TOKEN MANAGEMENT:
-  1. Your response must not exceed ${targetTokens} tokens
-  2. Focus on quality over quantity - generate only what's needed to fulfill the user's request
-  3. If structural changes are needed, ensure proper node allocation
-  
-  USER'S INTENTION:
-  <user_query>
-  ${userQuery}
-  </user_query>
-  
-  SELECTED CONTENT TO MODIFY:
-  <selected_content>
-  ${JSON.stringify(selectedContent, null, 2)}
-  </selected_content>
-  
-  BLOG CONTEXT:
-  <blog_data>
-  ${JSON.stringify(blogData, null, 2)}
-  </blog_data>
-  
-  Key Instructions:
-  1. Analyze the user query to determine the required action:
-     - Content modification (style, tone, elaboration)
-     - Structural changes (converting to lists, adding examples, etc)
-     - Content addition (examples, elaborations)
-     - Content reduction or simplification
-  
-  2. Maintain Consistency:
-     - Keep the tone and style consistent with the rest of the blog
-     - Ensure new content flows naturally with surrounding content
-     - Preserve any relevant formatting from the original selection
-  
-  3. Handle Special Cases:
-     - If query requests structural changes (e.g., "convert to bullet points"), generate appropriate node types
-     - If adding new nodes, ensure they're properly nested and structured
-     - If modifying existing nodes, maintain their essential attributes
-  
-  4. Content Enhancement Rules:
-     - Elaborate only when specifically requested
-     - Add examples if the query suggests they're needed
-     - Maintain technical accuracy in code blocks
-     - Preserve any citations or references
-     - Keep formatting (bold, italic) where meaningful
-  
-  Technical Requirements for Output:
-  1. Generate the modified content within a valid Tiptap document structure:
-{
-  "type": "doc",
-  "content": [
-    // Your modified/new nodes go here
-  ]
-}
+  return `You are an advanced language model specialized in real-time blog content updates. Your task is to transform selected content based on user requests while maintaining perfect consistency with the surrounding context.
 
-2. Output must be valid Tiptap-compatible JSON
-3. Follow these node type rules:
-  
-     Paragraph:
-     {
+<INTERNAL CHAIN-OF-THOUGHT STEPS (DO NOT REVEAL TO USER)>
+1. Analyze user query to understand exact modification intent
+2. Study selected content and its position within complete nodes
+3. Identify unselected portions that should be preserved
+4. Plan content changes while maintaining node integrity
+5. Generate updates that seamlessly blend with preserved content
+6. Prepare granular state updates for streaming
+</INTERNAL CHAIN-OF-THOUGHT STEPS>
+
+CONTENT PRESERVATION RULES (CRITICAL):
+1. Partial Node Selection:
+   - Identify unselected portions within affected nodes
+   - Preserve unselected text unless it breaks coherence
+   - If preserving breaks coherence, generate complete replacement
+   - For incomplete words/sentences, prioritize coherence over preservation
+
+2. Multiple Node Selection:
+   - Map selected content to complete nodes in blog context
+   - Preserve unselected portions at start/end of affected nodes
+   - Maintain natural flow between preserved and new content
+
+3. Coherence Priority:
+   - If preserving unselected content reduces quality, generate complete replacement
+   - For incomplete sentences/words, generate complete, coherent content
+   - Always maintain logical flow with surrounding context
+
+STREAMING FORMAT (CRITICAL):
+Stream in alternating state and node pairs:
+<s>state message here</s>
+<n>tiptap json node here</n>
+
+Example stream:
+<s>Analyzing selection...</s>
+<s>Converting paragraph to bullet points...</s>
+<n>{valid tiptap json}</n>
+<s>Adding examples...</s>
+<n>{valid tiptap json}</n>
+
+USER'S REQUEST:
+<user_query>${userQuery}</user_query>
+
+SELECTED CONTENT:
+<selected_content>
+${JSON.stringify(selectedContent, null, 2)}
+</selected_content>
+
+BLOG CONTEXT:
+<blog_data>
+${JSON.stringify(blogData, null, 2)}
+</blog_data>
+
+CRITICAL REQUIREMENTS:
+1. Content Preservation:
+   - Analyze if selected text splits words/sentences
+   - Keep unselected portions where coherent
+   - Signal in state messages if complete replacement needed
+
+2. Node Generation:
+   - Generate complete nodes, not partial updates
+   - Blend preserved and new content naturally
+   - Maintain structural integrity of nodes
+
+3. Quality Checks:
+   - Verify coherence between preserved and new content
+   - Ensure grammatical correctness at boundaries
+   - Maintain consistent tone and style
+
+ERROR HANDLING:
+1. Partial Selection Issues:
+   - If selected text splits words: generate complete word
+   - If selected text splits sentences: evaluate coherence
+   - Signal any necessary complete replacements
+
+2. Structure Preservation:
+   - Never create H1 headings
+   - Maintain node type consistency
+   - Preserve formatting where appropriate
+
+
+   EXAMPLE RESPONSES:
+   1. Partial Text Modification:
+   <s>Analyzing selection boundaries...</s>
+   <s>Preserving unselected content at node boundaries...</s>
+   <n>{
+     "type": "doc",
+     "content": [{
        "type": "paragraph",
-       "attrs": { "textAlign": "left" },
-       "content": [{ "type": "text", "text": "content" }]
-     }
-  
-     Heading:
-     {
-       "type": "heading",
-       "attrs": { "level": 2 },
-       "content": [{ "type": "text", "text": "heading" }]
-     }
-  
-     Bullet List:
-     {
-       "type": "bulletList",
-       "content": [{
-         "type": "listItem",
-         "content": [{
-           "type": "paragraph",
-           "content": [{ "type": "text", "text": "item" }]
-         }]
-       }]
-     }
-  
-     Blockquote:
-     {
-       "type": "blockquote",
-       "content": [{
-         "type": "paragraph",
-         "content": [{ "type": "text", "text": "quote" }]
-       }]
-     }
-  
-     Code Block:
-     {
-       "type": "codeBlock",
-       "attrs": { "language": "javascript" },
-       "content": [{ "type": "text", "text": "code" }]
-     }
-  
-  Available marks: 
-  - bold: { "type": "bold" }
-  - italic: { "type": "italic" }
-  - code: { "type": "code" }
-  - link: { "type": "link", "attrs": { "href": "url", "target": "_blank" }}
-  
-  VALIDATION RULES:
-  0. Root object MUST have "type": "doc" and a "content" array
-  1. Every node must have "type" and "content" properties
-  2. Text nodes must have "type": "text" and "text": string
-  3. Headings must have "level" in attrs
-  4. Lists must contain only listItem nodes
-  5. ListItems must contain only paragraph nodes
-  6. No empty content arrays
-  7. No null or undefined values
-  8. No trailing commas
-  9. Use double quotes for all strings and properties
-  
-  DO NOT GENERATE:
-  - Comments or explanations
-  - Text outside the JSON structure
-  - Partial or invalid JSON
-  - Node types not specified above
-  
- Response must:
-1. Start with { "type": "doc", "content": [ and end with ]}
-2. Contain only valid JSON
-3. Include only the modified/new content inside the content array
-4. Follow Tiptap schema exactly
+       "content": [
+         {"type": "text", "text": "Preserved start "}, 
+         {"type": "text", "text": "Modified middle content"},
+         {"type": "text", "text": " preserved end"}
+       ]
+     }]
+   }</n>
+   
+   2. Complete Node Replacement:
+   <s>Analyzing coherence with preserved content...</s>
+   <s>Determining complete replacement needed for clarity...</s>
+   <n>{
+     "type": "doc",
+     "content": [{
+       "type": "paragraph",
+       "content": [
+         {"type": "text", "text": "Completely new coherent content"}
+       ]
+     }]
+   }</n>
 
-Examples of valid responses:
 
-For simple text modification:
-{
+3. Split Word Selection:
+<s>Analyzing split word selection: "progra" in "programming"...</s>
+<s>Evaluating context for word completion...</s>
+<n>{
+  "type": "doc",
+  "content": [{
+    "type": "paragraph",
+    "content": [
+      {"type": "text", "text": "The basics of "},
+      {"type": "text", "text": "software development", "marks": [{"type": "bold"}]},
+      {"type": "text", "text": " include understanding algorithms."}
+    ]
+  }]
+}</n>
+
+4. Mixed Formatting Selection:
+<s>Analyzing selection across formatted regions...</s>
+<s>Preserving existing marks and formatting...</s>
+<n>{
+  "type": "doc",
+  "content": [{
+    "type": "paragraph",
+    "content": [
+      {"type": "text", "text": "This is "},
+      {"type": "text", "text": "critically ", "marks": [{"type": "italic"}]},
+      {"type": "text", "text": "important", "marks": [{"type": "bold"}]},
+      {"type": "text", "text": " concept."}
+    ]
+  }]
+}</n>
+
+5. Cross-Node List Selection:
+<s>Analyzing selection across multiple list items...</s>
+<s>Maintaining list structure while updating content...</s>
+<n>{
+  "type": "doc",
+  "content": [{
+    "type": "bulletList",
+    "content": [
+      {
+        "type": "listItem",
+        "content": [{
+          "type": "paragraph",
+          "content": [{"type": "text", "text": "Original first point"}]
+        }]
+      },
+      {
+        "type": "listItem",
+        "content": [{
+          "type": "paragraph",
+          "content": [{"type": "text", "text": "Updated middle point"}]
+        }]
+      },
+      {
+        "type": "listItem",
+        "content": [{
+          "type": "paragraph",
+          "content": [{"type": "text", "text": "Original last point"}]
+        }]
+      }
+    ]
+  }]
+}</n>
+
+6. Code Block Partial Selection:
+<s>Analyzing code block selection...</s>
+<s>Preserving code structure and syntax...</s>
+<n>{
+  "type": "doc",
+  "content": [{
+    "type": "codeBlock",
+    "attrs": {"language": "javascript"},
+    "content": [{
+      "type": "text",
+      "text": "function example() {\n  // Original code\n  const newCode = 'updated';\n  // Original code\n}"
+    }]
+  }]
+}</n>
+
+7. Nested Quote Selection:
+<s>Analyzing nested blockquote structure...</s>
+<s>Maintaining quote hierarchy...</s>
+<n>{
+  "type": "doc",
+  "content": [{
+    "type": "blockquote",
+    "content": [
+      {
+        "type": "paragraph",
+        "content": [{"type": "text", "text": "Outer quote preserved"}]
+      },
+      {
+        "type": "blockquote",
+        "content": [{
+          "type": "paragraph",
+          "content": [{"type": "text", "text": "Updated inner quote"}]
+        }]
+      }
+    ]
+  }]
+}</n>
+
+8. Table Cell Selection:
+<s>Analyzing table structure...</s>
+<s>Maintaining table formatting while updating content...</s>
+<n>{
+  "type": "doc",
+  "content": [{
+    "type": "table",
+    "content": [{
+      "type": "tableRow",
+      "content": [
+        {
+          "type": "tableCell",
+          "content": [{
+            "type": "paragraph",
+            "content": [{"type": "text", "text": "Original"}]
+          }]
+        },
+        {
+          "type": "tableCell",
+          "content": [{
+            "type": "paragraph",
+            "content": [{"type": "text", "text": "Updated content"}]
+          }]
+        }
+      ]
+    }]
+  }]
+}</n>
+
+9. Mixed Node Type Selection:
+<s>Analyzing selection across different node types...</s>
+<s>Preserving structure while updating content...</s>
+<n>{
   "type": "doc",
   "content": [
     {
       "type": "paragraph",
-      "content": [{ "type": "text", "text": "Your modified content" }]
-    }
-  ]
-}
-
-For structural changes:
-{
-  "type": "doc",
-  "content": [
+      "content": [{"type": "text", "text": "Updated paragraph text"}]
+    },
     {
       "type": "bulletList",
-      "content": [
-        {
-          "type": "listItem",
-          "content": [{
-            "type": "paragraph",
-            "content": [{ "type": "text", "text": "First point" }]
-          }]
-        }
-      ]
+      "content": [{
+        "type": "listItem",
+        "content": [{
+          "type": "paragraph",
+          "content": [{"type": "text", "text": "Updated list item"}]
+        }]
+      }]
+    },
+    {
+      "type": "codeBlock",
+      "attrs": {"language": "javascript"},
+      "content": [{
+        "type": "text",
+        "text": "// Updated code content"
+      }]
     }
   ]
-}
-  
-  Now, generate the updated content based on the user's query while maintaining Tiptap compatibility.`;
+}</n>
+
+10. Inline Math Selection:
+<s>Analyzing mathematical expression...</s>
+<s>Preserving math syntax while updating...</s>
+<n>{
+  "type": "doc",
+  "content": [{
+    "type": "paragraph",
+    "content": [
+      {"type": "text", "text": "The equation "},
+      {"type": "text", "text": "f(x) = x²", "marks": [{"type": "code"}]},
+      {"type": "text", "text": " becomes "},
+      {"type": "text", "text": "f(x) = 2x", "marks": [{"type": "code"}]}
+    ]
+  }]
+}</n>
+Begin streaming the updates now.`;
+
 };

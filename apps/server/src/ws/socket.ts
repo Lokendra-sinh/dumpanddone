@@ -3,6 +3,7 @@ import type { WebSocket, WebSocketServer } from "ws";
 import { startOutlineStreaming } from "../models/outine-streaming";
 import { addChaos } from "../db/queries/addContent";
 import { startBlogStreaming } from "../models/stream-blog";
+import { startContentEditStreaming } from "../models/stream-edit-blog";
 
 export interface ModifiedWebSocketInstanceType extends WebSocket {
   blogId: string;
@@ -90,6 +91,7 @@ export class Socket {
   }
 
   private validateMessage(message: any, requiredFields: string[]) {
+    console.log("Required fields are", requiredFields);
     for (const field of requiredFields) {
       if (!message[field]) {
         throw new Error(`Missing required field: ${field}`);
@@ -103,12 +105,7 @@ export class Socket {
     const requestState = this.createRequestState(ws, message.userId, message.blogId, 'OUTLINE');
     this.updateConnectionInfo(message.userId, message.blogId, requestState);
 
-    addChaos({
-      chaos: message.chaos,
-      userId: message.userId,
-      blogId: message.blogId,
-    });
-
+    console.log("starting outline streaming");
     startOutlineStreaming({
       chaos: message.chaos,
       requestState,
@@ -136,17 +133,18 @@ export class Socket {
   }
 
   private handleEditBlogStream(ws: ModifiedWebSocketInstanceType, message: any) {
-    this.validateMessage(message, ['userId', 'blogId', 'outline', 'selectedModel']);
+    this.validateMessage(message, ['userId', 'blogId', 'selectedModel', 'selectionContext', 'userPrompt']);
 
     const requestState = this.createRequestState(ws, message.userId, message.blogId, 'EDIT_BLOG');
     this.updateConnectionInfo(message.userId, message.blogId, requestState);
 
-    startBlogStreaming({
-      outline: message.outline,
-      userId: message.userId,
-      blogId: message.blogId,
+    startContentEditStreaming({
+      userPrompt: message.userPrompt,
+      selectionContext: message.selectionContext,
       requestState,
       selectedModel: message.selectedModel,
+      userId: message.userId,
+      blogId: message.blogId,
     });
 
     return requestState;
@@ -197,7 +195,7 @@ export class Socket {
             this.handleBlogStream(ws, parsedMessage);
             break;
 
-          case "START_EDIT_BLOG_STREAM":
+          case "START_EDIT_STREAM":
             this.handleEditBlogStream(ws, parsedMessage)
             break;
 

@@ -11,18 +11,15 @@ async function streamWithClaude(
 ) {
   const prompt = blogGeneratorPrompt(chaos, outline);
   
-  const stream = anthropic.messages
-    .stream({
+  return new Promise((resolve, reject) => {
+    const stream = anthropic.messages.stream({
       model: "claude-3-5-sonnet-20241022",
       max_tokens: 8192,
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        }
-      ],
-    })
-    .on('text', (text) => {
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    // Handle text streaming
+    stream.on('text', (text) => {
       if (requestState.status === 'aborted') {
         stream.controller.abort();
         return;
@@ -38,7 +35,21 @@ async function streamWithClaude(
         }));
       }
     });
+
+    // Handle stream completion
+    stream.on('end', () => {
+      console.log("Blog stream completed");
+      resolve(undefined);
+    });
+
+    // Handle errors
+    stream.on('error', (error) => {
+      console.error("Blog stream error:", error);
+      reject(error);
+    });
+  });
 }
+
 
 async function streamWithDeepseek(
  chaos: string, 

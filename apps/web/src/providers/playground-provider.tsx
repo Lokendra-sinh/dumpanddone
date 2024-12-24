@@ -3,19 +3,10 @@ import { Editor } from "@tiptap/react"
 import { ReactNode } from "@tanstack/react-router";
 import { useEditorInstance } from "@/hooks/useEditorInstance";
 import { useEditorConfig } from "@/hooks/useEditorConfig";
-import { TipTapContentType } from "@dumpanddone/types";
 import { useBlogsStore } from "@/store/useBlogsStore";
+import { SelectionInfo } from "@/types/editor";
 
 type Coordinates = { top: number; left: number }
-
-export interface SelectionInfo {
-  nodes: TipTapContentType;
-  selectedText: string;
-  selectionBoundaries: {
-    from: number;
-    to: number;
-  };
-}
 
 interface PlaygroundContextType {
   editor: Editor | null;

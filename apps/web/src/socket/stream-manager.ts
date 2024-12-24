@@ -73,6 +73,7 @@ class StreamManager {
   }
 
   private handleStreamProgress(event: MessageEvent) {
+    console.log("receive progrss", event);
     if (!this.currentStream) return;
 
     const parser = this.parsers[this.currentStream.stream];
@@ -92,6 +93,10 @@ class StreamManager {
     const parser = this.parsers[this.currentStream.stream];
     if(this.currentStream.stream === "OUTLINE"){
       parser.finalize();
+    }
+
+    if(this.currentStream.stream === "BLOG"){
+      parser.finalize()
     }
     
     // Then update stream state

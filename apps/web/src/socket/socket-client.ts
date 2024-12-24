@@ -1,3 +1,4 @@
+import { SelectionInfo } from './../types/editor';
 import { ModelsType, OutlineSectionType } from "@dumpanddone/types";
 import { streamManager } from "./stream-manager";
 
@@ -10,12 +11,14 @@ interface SendMessageProps {
     | "START_EDIT_STREAM"
     | "STOP_EDIT_STREAM"
     | "ABORT_STREAM"
+  userPrompt?: string
   chaos?: string;
   requestId?: string
   userId: string;
   blogId?: string;
   selectedModel?: ModelsType;
   outline?: OutlineSectionType[];
+  selectionContext?: SelectionInfo
 }
 
 // WebSocket ready states

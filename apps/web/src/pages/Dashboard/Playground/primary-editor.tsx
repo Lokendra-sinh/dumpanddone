@@ -10,38 +10,21 @@ import { trpc } from "@/utils/trpc";
 import { useUserStore } from "@/store/useUserStore";
 import { useParams } from "@tanstack/react-router";
 import { BlogEditorRoute } from "@/routes/routes";
-import { TiptapDocument } from "@dumpanddone/types";
+import { createSelectionHandler } from "@/lib/editor-helpers";
+import { isValidTiptapDocument } from "@/lib/editor-helpers";
+import { useScrollObserver } from "@/hooks/useScrollObserver";
+import { useSmartScroll } from "@/hooks/useSmartScroll";
 
 
-function isValidTiptapDocument(doc: any): doc is TiptapDocument {
-  return (
-    doc &&
-    typeof doc === "object" &&
-    doc.type === "doc" &&
-    Array.isArray(doc.content) &&
-    doc.content.every((node) => isValidTipTapNode(node))
-  );
-}
 
-function isValidTipTapNode(node: any): boolean {
-  // Add validation for each node type
-  const validTypes = [
-    "paragraph",
-    "heading",
-    "bulletList",
-    "orderedList",
-    "codeBlock",
-    "blockquote",
-    "image",
-  ];
-  return node && typeof node === "object" && validTypes.includes(node.type);
-}
 
 export const PrimaryEditor = () => {
   const userId = useUserStore((state) => state.user?.id);
   const { blogId } = useParams({ from: BlogEditorRoute.id });
  
   const { editor, setSelectionInfo, setCoords } = usePlayground();
+  const isOverflowing = useScrollObserver(editor);
+  const smartScroll = useSmartScroll(editor);
 
   const deleteAllLoadingNodes = (editor) => {
     // Get all loading nodes and their positions along with their sizes
@@ -66,101 +49,49 @@ export const PrimaryEditor = () => {
     });
   };
 
-  const scrollWithBuffer = () => {
-    const editorElement = editor!.view.dom;
-    const parentContainer = editorElement.parentElement;
-
-    // Calculate the target scroll position
-    const totalHeight = editorElement.scrollHeight;
-    const containerHeight = parentContainer!.clientHeight;
-    const buffer = 150; // Adjust this value to control how much space to leave at bottom
-
-    // Scroll the parent container
-    parentContainer!.scrollTo({
-      top: totalHeight - containerHeight + buffer,
-      behavior: "smooth",
-    });
-  };
-
   const { mutate: syncBlog } = trpc.syncBlog.useMutation({
     onError: (error) => {
       console.error("Failed to sync blog:", error);
-      // Show error toast
+      // have some mechanism in place to handle this error.
     },
   });
 
   useEffect(() => {
     if (!editor) return;
 
-    console.log("editor re-rendered");
+    const handleSelectionUpdate = createSelectionHandler(
+      editor,
+      setSelectionInfo,
+      setCoords
+    );
 
     editor.commands.focus();
-
-    const handleSelectionUpdate = () => {
-      const { state } = editor;
-      const { selection } = state;
-      const { empty, $from, $to } = selection;
-
-      if (empty) {
-        setSelectionInfo(null);
-        setCoords({ top: 0, left: 0 });
-        return;
-      }
-
-      const fromCoords = editor.view.coordsAtPos($from.pos);
-      const toCoords = editor.view.coordsAtPos($to.pos);
-      const bottomMostCoord = Math.max(fromCoords.bottom, toCoords.bottom);
-
-      setCoords({
-        left: Math.max(fromCoords.left, toCoords.left),
-        top: bottomMostCoord + 5,
-      });
-
-      // Get the selected text (plain text, if needed)
-      const selectedText = editor.state.doc.textBetween($from.pos, $to.pos);
-
-      // Get all nodes within the selection range as a fragment
-      const fragment = selection.content();
-      // Convert the selected fragment to a JSON representation
-      const selectedNodes = fragment.toJSON();
-
-      delete selectedNodes.openStart;
-      delete selectedNodes.openEnd;
-
-      // Set selection info with node types, attributes, marks, etc.
-      setSelectionInfo({
-        nodes: selectedNodes,
-        selectedText,
-        selectionBoundaries: { from: $from.pos, to: $to.pos },
-      });
-
-      editor.commands.focus();
-    };
-
     editor.on("selectionUpdate", handleSelectionUpdate);
 
     return () => {
       editor.off("selectionUpdate", handleSelectionUpdate);
     };
-  }, [editor, setCoords, setSelectionInfo]);
+  }, [editor, setSelectionInfo, setCoords]);
 
   useEffect(() => {
     if (!editor) return;
   
     const listener = {
       onNode: (node) => {
-        console.log("NODE in useEffect is", node);
         deleteAllLoadingNodes(editor);
         editor.commands.insertContent({
           type: "doc",
           content: [node],
         });
-        scrollWithBuffer();
+        if (isOverflowing) {
+          smartScroll();
+        }
       },
       onState: (state) => {
-        if (state === "WRITE_BLOG_END") {  // Changed from BLOG_COMPLETE
+        if (state === "BLOG_END") {  // Changed from BLOG_COMPLETE
           deleteAllLoadingNodes(editor);
           const jsonContent = editor.getJSON();
+          console.log("JSON BLOG to be stored is", jsonContent);
           if (isValidTiptapDocument(jsonContent)) {
             syncBlog({
               blog: jsonContent,
@@ -183,7 +114,9 @@ export const PrimaryEditor = () => {
             },
           ],
         });
-        scrollWithBuffer();
+        if (isOverflowing) {
+          smartScroll();
+        }
       },
     };
   

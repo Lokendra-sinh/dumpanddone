@@ -8,22 +8,39 @@ async function streamWithClaude(
     ws: ModifiedWebSocketInstanceType,
     metadata: { userId: string; blogId: string; selectedModel: ModelsType }
 ) {
-    anthropic.messages.stream({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 4096,
-        messages: [
-            {
-                role: "user",
-                content: outlineGeneratorPrompt(content),
-            }
-        ],
-    }).on('text', (text) => {
-        ws.send(JSON.stringify({
-            type: "OUTLINE_PROGRESS",
-            content: text,
-            ...metadata
-        }))
+
+    return new Promise((resolve, reject) => {
+        const stream =  anthropic.messages.stream({
+            model: "claude-3-5-sonnet-20241022",
+            max_tokens: 4096,
+            messages: [
+                {
+                    role: "user",
+                    content: outlineGeneratorPrompt(content),
+                }
+            ],
+        })
+
+        stream.on('text', (text) => {
+            ws.send(JSON.stringify({
+                type: "OUTLINE_PROGRESS",
+                content: text,
+                ...metadata
+            }));
+        });
+
+        // Stream is done
+        stream.on('end', () => {
+            resolve(undefined);
+        });
+
+        // Handle any errors
+        stream.on('error', (error) => {
+            console.error("Claude Stream error while streaming outline:", error);
+            reject(error);
+        });
     })
+ 
 }
 
 async function streamWithDeepseek(

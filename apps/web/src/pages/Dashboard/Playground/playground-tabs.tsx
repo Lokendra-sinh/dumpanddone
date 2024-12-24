@@ -69,6 +69,7 @@ export const PlaygroundTabs = () => {
   };
 
   const generateBlogOutline = async () => {
+    console.log("generate blog outline when model is", selectedModel);
     const currentStream = streamManager.getStreamStatus();
     
     if (currentStream) {
@@ -103,6 +104,7 @@ export const PlaygroundTabs = () => {
     setSections([]);
     processedSections.current.clear(); 
     setIsScanning(true);
+    console.log("scanning set to true");
     socketClient.sendMessage({
       type: "START_OUTLINE_STREAM",
       chaos: content,
@@ -110,12 +112,13 @@ export const PlaygroundTabs = () => {
       blogId: blogId,
       selectedModel: selectedModel,
     });
-
+    console.log("sent socket message");
     syncChaosMutation.mutate({
       chaos: content,
       userId: user!.id,
       blogId: blogId,
     });
+    console.log("synced chaos");
   };
 
   const startBlogGeneration = () => {

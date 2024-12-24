@@ -42,6 +42,10 @@ export class BlogParser {
     this.editBlogListeners = this.editBlogListeners.filter(l => l !== listener);
   }
 
+  finalize(){
+    this.emitState("BLOG_END")
+  }
+
   private emitState(state: string) {
     const listeners = this.currentStream === 'WRITE_BLOG' 
       ? this.writeBlogListeners 

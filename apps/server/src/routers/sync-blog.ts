@@ -34,6 +34,8 @@ async function updateBlogContent(userId: string, blogId: string, blog: TiptapDoc
      });
    }
 
+   console.log("Blog exist and data is", existingBlog);
+
    // Update blog content
    const updatedBlog = await db
      .update(blogs)
@@ -65,6 +67,8 @@ export const syncBlog = protectedProcedure
  .input(SyncBlogInputSchema)
  .mutation(async ({ input }) => {
    const { blog, userId, blogId } = input;
+
+   console.log("received request to sync the BLOG");
 
    if (!blog || !userId || !blogId) {
      throw new TRPCError({

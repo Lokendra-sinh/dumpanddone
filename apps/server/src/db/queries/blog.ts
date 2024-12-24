@@ -38,7 +38,6 @@ export async function getBlogById(blogId: string, userId: string) {
 export async function getBlogsByUserId(userId: string){
     try{
         const userBlogs = await db.select().from(blogs).where(eq(blogs.user_id, userId))
-        console.log("user blogs are", userBlogs);
         return userBlogs.map(blog => ({id: blog.id, content: blog.blog}))
     } catch(e){
         console.error("Error while finding blogs for userID: ", userId)

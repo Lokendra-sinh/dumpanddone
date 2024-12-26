@@ -13,7 +13,7 @@ export default {
     extend: {
       height: {
         "screen-minus-16": "calc(100vh - 64px)",
-        "screen-minus-32": "calc(100vh - 160px)",
+        "screen-minus-32": "calc(100vh - 150px)",
         content: "calc(100vh - 64px)",
         "screen-minus-48": "calc(100vh - 260px)",
       },

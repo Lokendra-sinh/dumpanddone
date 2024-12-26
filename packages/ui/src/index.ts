@@ -24,6 +24,7 @@ export * from "./hooks/use-toast";
 export * from "./components/ui/accordion"
 export * from "./components/ui/badge"
 export * from "./components/ui/dialog"
+export * from "./components/ui/toggle-group"
 export {
     cn
 }

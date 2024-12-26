@@ -9,6 +9,7 @@ import {
   BlogsRoute,
   BlogEditorRoute,
   DashboardIndexRoute,
+  SettingsRoute,
 } from "./routes/routes";
 import { AuthRoute } from "./routes/authenticated-route";
 
@@ -16,6 +17,7 @@ const AuthenticatedRoutes = [
   DashboardRoute.addChildren([
     BlogsRoute,
     BlogEditorRoute,
+    SettingsRoute,
     DashboardIndexRoute
   ])
 ];

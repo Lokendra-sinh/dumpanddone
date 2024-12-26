@@ -14,6 +14,7 @@ import { useUserStore } from "@/store/useUserStore";
 import { PlaygroundIndex } from "@/pages/Dashboard/Playground/playground-index";
 import { z } from "zod";
 
+
 export const RootRoute = createRootRoute({
   component: Root,
   beforeLoad: async () => {
@@ -139,14 +140,53 @@ export const BlogsRoute = createRoute({
   },
 });
 
+export const SettingsRoute = createRoute({
+  getParentRoute: () => DashboardRoute,
+  path: "/settings",
+  component: lazyRouteComponent(
+    () => import("../pages/Dashboard/settings/settings"),
+  ),
+});
+
 
 const BlogEditorRouteSchema = z.object({
   selectedTab: z.union([z.literal("playground"), z.literal("outline"), z.literal("upload")]).optional()
 })
 
 export const BlogEditorRoute = createRoute({
-  getParentRoute: () => DashboardRoute,  // Changed to DashboardRoute
-  path: "/editor/$blogId",               // Changed path to be more explicit
+  getParentRoute: () => DashboardRoute, 
+  path: "/editor/$blogId",    
+  loader: async ({ params }) => {
+    const user = useUserStore.getState().user;
+    
+    if (!user) {
+      throw redirect({
+        to: '/login',
+        search: {
+          redirect: `/editor/${params.blogId}`
+        }
+      })
+    }
+
+    const blog = user.blogs.find(blog => blog.id === params.blogId);
+    if(blog){
+      return { blog };
+    } else {
+      return {
+        blog: {
+          id: params.blogId,
+          content: {
+            type: "doc",
+            content: [{
+              type: "paragraph",
+              content: []
+            }]
+          }
+        }
+      }
+    }
+      
+  },    
   component: PlaygroundIndex,
   validateSearch: (search: Record<string, unknown>) => {
     return BlogEditorRouteSchema.parse(search)

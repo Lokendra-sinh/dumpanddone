@@ -2,7 +2,7 @@
 type ModelsType = "claude" | "gpt" | "deepseek"
 interface TiptapDocument {
   type: "doc";
-  content: TipTapContentType
+  content: TipTapContentType | []
 }
 
 type TipTapNodeType = ParagraphNode | HeadingNode | BulletListNode | OrderedListNode | CodeBlockNode | BlockquoteNode | ImageNode | LoadingNode

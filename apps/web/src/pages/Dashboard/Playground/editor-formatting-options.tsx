@@ -1,5 +1,4 @@
 import { commandsMap } from "@/utils/commandsMap";
-import { usePlayground } from "@/providers/playground-provider";
 import {
   Button,
   useToast,
@@ -9,7 +8,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@dumpanddone/ui";
-import { BubbleMenu, EditorContent, useEditor } from "@tiptap/react";
+import { BubbleMenu, Editor, EditorContent, useEditor } from "@tiptap/react";
 import {
   ArrowRight,
   CheckSquare,
@@ -27,7 +26,7 @@ import {
   ToggleLeft,
   Wand2,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUserStore } from "@/store/useUserStore";
 import { createPortal } from "react-dom";
 import { useEditorConfig } from "@/hooks/useEditorConfig";
@@ -37,6 +36,7 @@ import { BlogEditorRoute } from "@/routes/routes";
 import { blogParser } from "@/socket/blog-parser";
 import { isValidTiptapDocument } from "@/lib/editor-helpers";
 import { trpc } from "@/utils/trpc";
+import { useCustomEditor, useDropdown, useSelection } from "@/providers/playground-provider";
 
 
 
@@ -60,7 +60,6 @@ const AiEnhanceSection = ({
   aiPrompt, 
   setAiPrompt, 
   onEnhance, 
-  textareaRef 
 }) => {
   return (
     <div className="py-4 space-y-2">
@@ -77,8 +76,6 @@ const AiEnhanceSection = ({
       </div>
       <div className="relative">
         <textarea
-          ref={textareaRef}
-          autoFocus={true}
           placeholder="Try: 'Make it more formal' or 'Add more details'"
           className="w-full min-h-[100px] outline-none p-2 text-sm focus-visible:ring-0 border-0 focus-visible:ring-offset-0 ring-muted-foreground resize-none bg-muted/50 rounded-md"
           value={aiPrompt}
@@ -242,15 +239,47 @@ const AiPreviewDialog = ({
 };
 
 
-export const EditorFormattingOptionsDropdown = () => {
-  const { editor, coords, selectionInfo, isDropdownOpen } = usePlayground();
+// BubbleMenuContent.tsx
+const BubbleMenuContent = memo(({ 
+  subEditor,
+  aiPrompt,
+  setAiPrompt,
+  onEnhance,
+  onMenuItemClick
+}: {
+  subEditor: Editor | null;
+  aiPrompt: string;
+  setAiPrompt: (value: string) => void;
+  onEnhance: () => void;
+  onMenuItemClick: (event: string) => void;
+}) => {
+  return (
+    <div className="sticky z-50 px-4 py-4 w-[500px] max-h-[500px] bg-background border rounded-lg shadow-lg overflow-hidden">
+      <SelectionPreview editor={subEditor} />
+      <AiEnhanceSection 
+        aiPrompt={aiPrompt}
+        setAiPrompt={setAiPrompt}
+        onEnhance={onEnhance}
+      />
+      <FormatOptions onMenuItemClick={onMenuItemClick} />
+    </div>
+  );
+});
+
+// Main Component
+export const EditorFormattingOptionsDropdown = memo(() => {
+  // Split context usage
+  const { editor } = useCustomEditor();
+  const { coords, selectionInfo } = useSelection();
+  const { isDropdownOpen } = useDropdown();
+
   const { blogId } = useParams({ from: BlogEditorRoute.id });
   const userID = useUserStore((state) => state.user?.id);
   const selectedModel = useUserStore((state) => state.selectedModel);
   const { toast } = useToast();
   const config = useEditorConfig();
   
-  // State management
+  // Local state
   const [aiPrompt, setAiPrompt] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [tippyContent, setTippyContent] = useState<HTMLElement | null>(null);
@@ -259,13 +288,20 @@ export const EditorFormattingOptionsDropdown = () => {
   const { mutate: syncBlog } = trpc.syncBlog.useMutation({
     onError: (error) => {
       console.error("Failed to sync blog:", error);
-      // have some mechanism in place to handle this error.
     },
   });
 
-  // Editor setup
-  const selectedNodes = getTiptapDoc(selectionInfo?.nodes);
-  const editorKey = JSON.stringify(selectedNodes);
+  // Memoize selected nodes
+  const selectedNodes = useMemo(() => 
+    getTiptapDoc(selectionInfo?.nodes), 
+    [selectionInfo?.nodes]
+  );
+
+  const editorKey = useMemo(() => 
+    JSON.stringify(selectedNodes), 
+    [selectedNodes]
+  );
+
   const subEditor = useEditor(
     {
       ...config,
@@ -274,11 +310,14 @@ export const EditorFormattingOptionsDropdown = () => {
     [editorKey]
   );
 
-  const handleMenuItemClick = (event: string) => {
+  const handleMenuItemClick = useCallback((event: string) => {
     if (!editor) return;
 
     const command = commandsMap.get(event);
     if (command) {
+      // Store selection before command
+      const { from, to } = editor.state.selection;
+      
       const success = command(editor);
       if (!success) {
         toast({
@@ -287,15 +326,20 @@ export const EditorFormattingOptionsDropdown = () => {
         });
         return;
       }
-      const pos = editor.state.selection.from;
-      editor.commands.setTextSelection({ from: pos, to: pos });
-      editor.commands.focus();
-    }
-  };
 
-  // Handlers
+      // Restore selection after command
+      editor
+        .chain()
+        .focus()
+        .setTextSelection({ from, to })
+        .run();
+    }
+  }, [editor, toast]);
+
   const handleAiEnhance = useCallback(() => {
     if (!selectionInfo?.nodes || !userID || !blogId) return;
+
+    subEditor?.commands.clearContent();
     
     socketClient.sendMessage({
       type: "START_EDIT_STREAM",
@@ -305,45 +349,48 @@ export const EditorFormattingOptionsDropdown = () => {
       blogId,
       selectionContext: {
         nodes: selectionInfo.nodes,
-        selectionBoundaries: selectionInfo.selectionBoundaries,
-        selectedText: selectionInfo.selectedText
+        selectedText: selectionInfo.selectedText,
+        selectionRange: selectionInfo.selectionRange
       },
     });
+    
     setShowAiPreview(true);
-    subEditor?.commands.clearContent()
-  }, [selectionInfo, userID, blogId, selectedModel, aiPrompt]);
+  }, [selectionInfo, userID, blogId, selectedModel, aiPrompt, subEditor]);
 
   const handleReplace = useCallback(() => {
     if (!editor || !subEditor || !selectionInfo) return;
     
-    const { from, to } = selectionInfo.selectionBoundaries;
-    
     try {
-      const isSelectionValid = from >= 0 && to <= editor.state.doc.content.size;
+      const { selectionRange } = selectionInfo;
       
-      if (!isSelectionValid) {
-        toast({ title: "Selection has changed. Please reselect text.", variant: "destructive" });
-        return;
-      }
-
       editor
         .chain()
         .focus()
-        .setTextSelection({ from, to })
-        .deleteSelection()
-        .insertContent(subEditor.getJSON())
+        .deleteRange({
+          from: selectionRange.from,
+          to: selectionRange.to
+        })
+        .insertContentAt(
+          selectionRange.from,
+          subEditor.getJSON().content || []
+        )
         .run();
         
       setShowAiPreview(false);
-      toast({ title: "Content updated successfully", variant: "default" });
+      toast({
+        title: "Content replaced successfully!",
+        variant: "default"
+      });
     } catch (error) {
       console.error("Replacement error:", error);
-      toast({ title: "Failed to update content. Please try again.", variant: "destructive" });
+      toast({
+        title: "Failed to update content",
+        variant: "destructive"
+      });
     }
-  }, [editor, selectionInfo, toast]);
+  }, [editor, subEditor, selectionInfo, toast]);
 
-  const deleteAllLoadingNodes = (editor) => {
-    // Get all loading nodes and their positions along with their sizes
+  const deleteAllLoadingNodes = useCallback((editor: Editor) => {
     const nodesToDelete: { pos: number; size: number }[] = [];
 
     editor.state.doc.descendants((node, pos) => {
@@ -355,7 +402,6 @@ export const EditorFormattingOptionsDropdown = () => {
       }
     });
 
-    // Delete from last to first to maintain correct positions
     nodesToDelete.reverse().forEach(({ pos, size }) => {
       editor
         .chain()
@@ -363,7 +409,7 @@ export const EditorFormattingOptionsDropdown = () => {
         .deleteRange({ from: pos, to: pos + size })
         .run();
     });
-  };
+  }, []);
 
   useEffect(() => {
     if (!subEditor) return;
@@ -371,13 +417,10 @@ export const EditorFormattingOptionsDropdown = () => {
     const listener = {
       onNode: (node) => {
         deleteAllLoadingNodes(subEditor);
-        subEditor.commands.insertContent({
-          type: "doc",
-          content: [node],
-        });
+        subEditor.commands.insertContent(node);
       },
       onState: (state) => {
-        if (state === "WRITE_BLOG_END") {  // Changed from BLOG_COMPLETE
+        if (state === "EDIT_BLOG_END") { 
           deleteAllLoadingNodes(subEditor);
           const jsonContent = subEditor.getJSON();
           if (isValidTiptapDocument(jsonContent)) {
@@ -410,62 +453,57 @@ export const EditorFormattingOptionsDropdown = () => {
     return () => {
       blogParser.unsubscribeFromEditBlog(listener);
     };
-  }, [subEditor, userID, blogId, syncBlog]);
+  }, [subEditor, userID, blogId, syncBlog, deleteAllLoadingNodes]);
 
   if (!coords) return null;
 
   return (
-    <>
-      <BubbleMenu
-        className="max-h-[800px]"
-        shouldShow={({ editor }) => {
-          const hasSelection = !editor.state.selection.empty && 
-                             editor.state.selection.content().size > 0;
-          const hasLoadingNode = editor.isActive('loadingNode');
-          
-          if (hasSelection && !hasLoadingNode) {
-            setTimeout(() => textareaRef.current?.focus(), 0);
+    <BubbleMenu
+      className="max-h-[800px]"
+      shouldShow={({ editor }) => {
+        const { empty, from, to } = editor.state.selection;
+        if (empty || editor.isActive('loadingNode')) return false;
+        const selectedText = editor.state.doc.textBetween(from, to).trim();
+        const hasValidSelection = selectedText.length > 0;
+        if (hasValidSelection) {
+          requestAnimationFrame(() => textareaRef.current?.focus());
+        }
+        
+        return hasValidSelection || isDropdownOpen;
+      }}
+      editor={editor}
+      tippyOptions={{
+        duration: 100,
+        placement: "bottom-end",
+        interactive: true,
+        onCreate(instance) {
+          const contentEl = instance.popper.querySelector(".tippy-content");
+          if (contentEl instanceof HTMLElement) {
+            setTippyContent(contentEl);
           }
-          
-          return (hasSelection && !hasLoadingNode) || isDropdownOpen;
-        }}
-        editor={editor}
-        tippyOptions={{
-          duration: 100,
-          placement: "bottom-end",
-          interactive: true,
-          onCreate(instance) {
-            const contentEl = instance.popper.querySelector(".tippy-content");
-            if (contentEl instanceof HTMLElement) {
-              setTippyContent(contentEl);
-            }
-          },
-        }}
-      >
-        {!showAiPreview && tippyContent && createPortal(
-          <div className="sticky z-50 px-4 py-4 w-[500px] max-h-[500px] bg-background border rounded-lg shadow-lg overflow-hidden">
-            <SelectionPreview editor={subEditor} />
-            <AiEnhanceSection 
-              aiPrompt={aiPrompt}
-              setAiPrompt={setAiPrompt}
-              onEnhance={handleAiEnhance}
-              textareaRef={textareaRef}
-            />
-            <FormatOptions onMenuItemClick={handleMenuItemClick} />
-          </div>,
-          tippyContent
-        )}
+        },
+      }}
+    >
+      {!showAiPreview && tippyContent && createPortal(
+        <BubbleMenuContent 
+          subEditor={subEditor}
+          aiPrompt={aiPrompt}
+          setAiPrompt={setAiPrompt}
+          onEnhance={handleAiEnhance}
+          onMenuItemClick={handleMenuItemClick}
+        />,
+        tippyContent
+      )}
 
-        <AiPreviewDialog 
-          open={showAiPreview}
-          onOpenChange={setShowAiPreview}
-          editor={subEditor}
-          onReplace={handleReplace}
-        />
-      </BubbleMenu>
-    </>
+      <AiPreviewDialog 
+        open={showAiPreview}
+        onOpenChange={setShowAiPreview}
+        editor={subEditor}
+        onReplace={handleReplace}
+      />
+    </BubbleMenu>
   );
-};
+});
 
 export function getTiptapDoc(nodes) {
   if (!nodes || !nodes.content) {

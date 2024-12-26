@@ -1,8 +1,8 @@
-import { EditorContent } from "@tiptap/react";
+import { Editor, EditorContent } from "@tiptap/react";
 import { CardContent } from "@dumpanddone/ui";
-import { useEffect } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 import { CHARACTER_LIMIT } from "@/utils/constants";
-import { usePlayground } from "@/providers/playground-provider";
+import { useCustomEditor, useSelection } from "@/providers/playground-provider";
 import { EditorFormattingOptionsDropdown } from "./editor-formatting-options";
 import { SlashCommandMenu } from "./slash-commmand-menu";
 import { blogParser } from "@/socket/blog-parser";
@@ -12,8 +12,7 @@ import { useParams } from "@tanstack/react-router";
 import { BlogEditorRoute } from "@/routes/routes";
 import { createSelectionHandler } from "@/lib/editor-helpers";
 import { isValidTiptapDocument } from "@/lib/editor-helpers";
-import { useScrollObserver } from "@/hooks/useScrollObserver";
-import { useSmartScroll } from "@/hooks/useSmartScroll";
+
 
 
 
@@ -21,13 +20,13 @@ import { useSmartScroll } from "@/hooks/useSmartScroll";
 export const PrimaryEditor = () => {
   const userId = useUserStore((state) => state.user?.id);
   const { blogId } = useParams({ from: BlogEditorRoute.id });
+  const editorContentRef = useRef<HTMLDivElement>(null);
  
-  const { editor, setSelectionInfo, setCoords } = usePlayground();
-  const isOverflowing = useScrollObserver(editor);
-  const smartScroll = useSmartScroll(editor);
+  // Split into specific contexts
+  const { editor } = useCustomEditor();
+  const { setSelectionInfo, setCoords } = useSelection();
 
-  const deleteAllLoadingNodes = (editor) => {
-    // Get all loading nodes and their positions along with their sizes
+  const deleteAllLoadingNodes = useCallback((editor) => {
     const nodesToDelete: { pos: number; size: number }[] = [];
 
     editor.state.doc.descendants((node, pos) => {
@@ -39,7 +38,6 @@ export const PrimaryEditor = () => {
       }
     });
 
-    // Delete from last to first to maintain correct positions
     nodesToDelete.reverse().forEach(({ pos, size }) => {
       editor
         .chain()
@@ -47,15 +45,25 @@ export const PrimaryEditor = () => {
         .deleteRange({ from: pos, to: pos + size })
         .run();
     });
-  };
+  }, []);
 
   const { mutate: syncBlog } = trpc.syncBlog.useMutation({
     onError: (error) => {
       console.error("Failed to sync blog:", error);
-      // have some mechanism in place to handle this error.
     },
   });
 
+
+  useEffect(() => {
+    if (!editor) return;
+    
+    // Log the HTML structure
+    console.log('Editor HTML:', editor.getHTML());
+    // Log the JSON structure
+    console.log('Editor JSON:', editor.getJSON());
+  }, [editor?.getHTML()]);
+
+  // Selection update handler
   useEffect(() => {
     if (!editor) return;
 
@@ -73,25 +81,46 @@ export const PrimaryEditor = () => {
     };
   }, [editor, setSelectionInfo, setCoords]);
 
+  // Blog write handler
   useEffect(() => {
     if (!editor) return;
   
     const listener = {
       onNode: (node) => {
         deleteAllLoadingNodes(editor);
-        editor.commands.insertContent({
-          type: "doc",
-          content: [node],
-        });
-        if (isOverflowing) {
-          smartScroll();
+        
+        // Get the end position of the document
+        const endPos = editor.state.doc.content.size;
+  
+        // If the previous node was a list or a nested structure
+        // insert an empty paragraph first to "break out" of any nested context
+        const lastNode = editor.state.doc.lastChild;
+        if (lastNode && (
+          lastNode.type.name === 'bulletList' || 
+          lastNode.type.name === 'orderedList' ||
+          lastNode.type.name === 'blockquote'
+        )) {
+          editor
+            .chain()
+            .insertContentAt(endPos, {
+              type: 'paragraph',
+              content: []
+            })
+            .run();
+        }
+  
+        // Now safely insert the new node
+        editor.commands.insertContent(node);
+  
+        if(editorContentRef.current){
+          editorContentRef.current.scrollTop = editorContentRef.current.scrollHeight;
         }
       },
       onState: (state) => {
-        if (state === "BLOG_END") {  // Changed from BLOG_COMPLETE
+        if (state === "BLOG_END") {
           deleteAllLoadingNodes(editor);
           const jsonContent = editor.getJSON();
-          console.log("JSON BLOG to be stored is", jsonContent);
+          
           if (isValidTiptapDocument(jsonContent)) {
             syncBlog({
               blog: jsonContent,
@@ -104,7 +133,26 @@ export const PrimaryEditor = () => {
           return;
         }
   
+        // For loading nodes, we also want to ensure proper positioning
         deleteAllLoadingNodes(editor);
+        const endPos = editor.state.doc.content.size;
+        
+        // Same check for nested structures before inserting loading node
+        const lastNode = editor.state.doc.lastChild;
+        if (lastNode && (
+          lastNode.type.name === 'bulletList' || 
+          lastNode.type.name === 'orderedList' ||
+          lastNode.type.name === 'blockquote'
+        )) {
+          editor
+            .chain()
+            .insertContentAt(endPos, {
+              type: 'paragraph',
+              content: []
+            })
+            .run();
+        }
+  
         editor.commands.insertContent({
           type: "doc",
           content: [
@@ -114,9 +162,6 @@ export const PrimaryEditor = () => {
             },
           ],
         });
-        if (isOverflowing) {
-          smartScroll();
-        }
       },
     };
   
@@ -125,34 +170,53 @@ export const PrimaryEditor = () => {
     return () => {
       blogParser.unsubscribeFromWriteBlog(listener);
     };
-  }, [editor, userId, blogId]);
+  }, [editor, userId, blogId, deleteAllLoadingNodes]);
 
   if (!editor) return null;
 
   return (
-    <div className="w-full h-screen-minus-32 overflow-auto flex flex-col justify-center border-none">
+    <div className="w-full h-screen-minus-32 overflow-auto flex flex-col justify-start border-none">
       <CardContent className="w-full flex-grow overflow-auto border-none outline-none">
         <div className="w-full h-full flex overflow-auto outline-none relative">
-          {" "}
-          {/* <BubbleMenuOptions /> */}
           <EditorContent
-            key="firstEditor"
+            ref={editorContentRef}
             editor={editor}
             className="w-[800px] h-full"
           />
-          <EditorFormattingOptionsDropdown />
-          <SlashCommandMenu />
+          <MemoizedEditorFormattingDropdown />
+          <MemoizedSlashCommandMenu />
         </div>
       </CardContent>
-      <div className="w-full flex justify-between px-5">
-        <div
-          className={`w-full flex justify-end character-count ${editor.storage.characterCount.characters() === CHARACTER_LIMIT ? "character-count--warning" : ""}`}
-        >
-          <div className="flex flex-col">
-            {editor.storage.characterCount.words()} words
-          </div>
+      <WordCount editor={editor} />
+    </div>
+  );
+};
+
+// Split word count into separate component
+const WordCount = ({ editor }: { editor: Editor }) => {
+  const characterCount = editor.storage.characterCount.characters();
+  const wordCount = editor.storage.characterCount.words();
+
+  return (
+    <div className="w-full flex justify-between px-5">
+      <div className={`w-full flex justify-end character-count ${
+        characterCount === CHARACTER_LIMIT ? "character-count--warning" : ""
+      }`}>
+        <div className="flex flex-col">
+          {wordCount} words
         </div>
       </div>
     </div>
   );
-};
+}
+
+// Memoize the dropdowns
+const MemoizedEditorFormattingDropdown = memo(() => {
+  const { editor } = useCustomEditor();
+  return editor ? <EditorFormattingOptionsDropdown /> : null;
+});
+
+const MemoizedSlashCommandMenu = memo(() => {
+  const { editor } = useCustomEditor();
+  return editor ? <SlashCommandMenu /> : null;
+});

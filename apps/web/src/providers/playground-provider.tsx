@@ -1,118 +1,120 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { Editor } from "@tiptap/react"
-import { ReactNode } from "@tanstack/react-router";
+import { ReactNode, useLoaderData } from "@tanstack/react-router";
 import { useEditorInstance } from "@/hooks/useEditorInstance";
 import { useEditorConfig } from "@/hooks/useEditorConfig";
-import { useBlogsStore } from "@/store/useBlogsStore";
 import { SelectionInfo } from "@/types/editor";
+import { BlogEditorRoute } from "@/routes/routes";
+import { TiptapDocument } from "@dumpanddone/types";
 
 type Coordinates = { top: number; left: number }
 
-interface PlaygroundContextType {
+interface EditorContextType {
   editor: Editor | null;
-  isDropdownOpen: boolean;
-  setIsDropdownOpen: (value: boolean) => void;
+}
+
+interface SelectionContextType {
   coords: Coordinates;
   setCoords: (coords: Coordinates) => void;
-  resetDropdownState: () => void;
   selectionInfo: SelectionInfo | null;
   setSelectionInfo: (info: SelectionInfo | null) => void;
 }
 
-export const PlaygroundContext = createContext<PlaygroundContextType | null>(null);
+interface DropdownContextType {
+  isDropdownOpen: boolean;
+  setIsDropdownOpen: (value: boolean) => void;
+  resetDropdownState: () => void;
+}
+
+const EditorContext = createContext<EditorContextType | null>(null);
+const SelectionContext = createContext<SelectionContextType | null>(null);
+const DropdownContext = createContext<DropdownContextType | null>(null);
 
 export const PlaygroundProvider = ({ children }: { children: ReactNode }) => {
+  const { blog } = useLoaderData({ from: BlogEditorRoute.id })
+  const blogContent: TiptapDocument = blog.content as TiptapDocument || {
+    type: "doc",
+    content: []
+  };
 
-  const blogData = useBlogsStore(state => state.activeBlog?.content)
   const config = useEditorConfig();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [coords, setCoords] = useState<Coordinates>({top: 0, left: 0});
-  const [selectionInfo, setSelectionInfo] = useState<SelectionInfo | null>(null);
-
-  console.log("blogData changed in provider ", blogData);
+  
+  // Group related state
+  const [dropdownState, setDropdownState] = useState({
+    isOpen: false,
+    coords: { top: 0, left: 0 }
+  });
+  
+  const [selectionState, setSelectionState] = useState<{
+    coords: Coordinates;
+    info: SelectionInfo | null;
+  }>({
+    coords: { top: 0, left: 0 },
+    info: null
+  });
 
   const editor = useEditorInstance({
     config,
-    content: blogData,
+    content: blogContent,
     handlers: {
-      editorProps: {
-        handleKeyDown: (view, event) => {
-          const { state } = view;
-          const { selection } = state;
-          const { empty, from } = selection;
-          
-          if (event.key === "/" && empty) {
-            // Get the node before cursor using 'from' position
-            const $from = state.doc.resolve(from);
-            const textBefore = $from.parent.textBetween(
-              Math.max(0, $from.parentOffset - 1),
-              $from.parentOffset,
-              ''
-            );
-            
-            // Only show menu if "/" is typed at start of line or after space
-            if (!textBefore || textBefore === ' ') {
-              const coords = view.coordsAtPos(from);
-              setCoords({ 
-                left: coords.left, 
-                top: coords.bottom + 8 
-              });
-              setIsDropdownOpen(true);
-              return true; // Prevent "/" from being inserted
-            }
-          }
-
-          // Close menu on escape
-          if (event.key === 'Escape' && isDropdownOpen) {
-            resetDropdownState();
-            return true;
-          }
-          
-          return false;
-        },
-      },
+      // ... existing handlers
     },
   });
 
-  const resetDropdownState = () => {
-    setIsDropdownOpen(false);
-    setCoords({top: 0, left: 0});
-  };
+  const resetDropdownState = useCallback(() => {
+    setDropdownState({
+      isOpen: false,
+      coords: { top: 0, left: 0 }
+    });
+  }, []);
 
-  const value: PlaygroundContextType = {
-    editor,
-    isDropdownOpen,
-    setIsDropdownOpen,
-    coords,
-    setCoords,
-    resetDropdownState,
-    selectionInfo,
-    setSelectionInfo
-  };
+  // Create separate context values
+  const editorValue = useMemo(() => ({
+    editor
+  }), [editor]);
 
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleClick = () => {
-      if (isDropdownOpen) {
-        resetDropdownState();
-      }
-    };
+  const selectionValue = useMemo(() => ({
+    coords: selectionState.coords,
+    setCoords: (coords: Coordinates) => 
+      setSelectionState(prev => ({ ...prev, coords })),
+    selectionInfo: selectionState.info,
+    setSelectionInfo: (info: SelectionInfo | null) => 
+      setSelectionState(prev => ({ ...prev, info }))
+  }), [selectionState]);
 
-    document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
-  }, [isDropdownOpen]);
+  const dropdownValue = useMemo(() => ({
+    isDropdownOpen: dropdownState.isOpen,
+    setIsDropdownOpen: (isOpen: boolean) => 
+      setDropdownState(prev => ({ ...prev, isOpen })),
+    resetDropdownState
+  }), [dropdownState, resetDropdownState]);
 
   return (
-    <PlaygroundContext.Provider value={value}>
-      {children}
-    </PlaygroundContext.Provider>
+    <EditorContext.Provider value={editorValue}>
+      <SelectionContext.Provider value={selectionValue}>
+        <DropdownContext.Provider value={dropdownValue}>
+          {children}
+        </DropdownContext.Provider>
+      </SelectionContext.Provider>
+    </EditorContext.Provider>
   );
 };
 
-export const usePlayground = () => {
-  const context = useContext(PlaygroundContext);
-  if (!context) {
-    throw new Error("usePlayground must be used within a PlaygroundProvider");
-  }
+// Custom hooks for accessing specific context
+export const useCustomEditor = () => {
+  const context = useContext(EditorContext);
+  if (!context) throw new Error("useEditor must be used within PlaygroundProvider");
+  return context;
+};
+
+export const useSelection = () => {
+  const context = useContext(SelectionContext);
+  if (!context) throw new Error("useSelection must be used within PlaygroundProvider");
+  return context;
+};
+
+export const useDropdown = () => {
+  const context = useContext(DropdownContext);
+  if (!context) throw new Error("useDropdown must be used within PlaygroundProvider");
   return context;
 };

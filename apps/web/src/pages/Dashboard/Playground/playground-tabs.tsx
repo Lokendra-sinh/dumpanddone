@@ -1,4 +1,15 @@
-import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@dumpanddone/ui";
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Separator,
+  SidebarTrigger,
+  useToast,
+} from "@dumpanddone/ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@dumpanddone/ui";
 import {
   Card,
@@ -18,7 +29,7 @@ import {
 } from "@dumpanddone/ui";
 import { Upload, Palette, FileDown, Loader2, InfoIcon } from "lucide-react";
 import { useUserStore } from "@/store/useUserStore";
-import { useEffect, useRef, useState } from "react";
+import {useEffect, useRef, useState } from "react";
 import { ModelsType, OutlineSectionType } from "@dumpanddone/types";
 import { socketClient } from "@/socket/socket-client";
 import { Outline } from "./Outline";
@@ -28,14 +39,18 @@ import { useParams, useSearch } from "@tanstack/react-router";
 import { BlogEditorRoute } from "@/routes/routes";
 import { outlineParser } from "@/socket/outline-parser";
 import { trpc } from "@/utils/trpc";
-import { usePlayground } from "@/providers/playground-provider";
 import { streamManager } from "@/socket/stream-manager";
+import { ModeToggle } from "@/components/toggle-mode";
+import { FormattingToolsPanel } from "./formatting-tools-panel";
+import { commandsMap } from "@/utils/commandsMap";
+import { useCustomEditor } from "@/providers/playground-provider";
 
 type TabsType = "upload" | "outline" | "playground";
 
 export const PlaygroundTabs = () => {
+  const { toast } = useToast()
   const { blogId } = useParams({ from: BlogEditorRoute.id });
-  const { editor } = usePlayground();
+  const { editor } = useCustomEditor();
   const { selectedTab } = useSearch({ from: BlogEditorRoute.id });
   const user = useUserStore((state) => state.user);
   const setModelInZustand = useUserStore((state) => state.setSelectedModel);
@@ -45,10 +60,11 @@ export const PlaygroundTabs = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelsType>("claude");
   const [showStreamDialog, setShowStreamDialog] = useState(false);
-  const [pendingOperation, setPendingOperation] = useState<'outline' | 'blog' | null>(null);
-  const [isAborting, setIsAborting] = useState<boolean>(false)
+  const [pendingOperation, setPendingOperation] = useState<
+    "outline" | "blog" | null
+  >(null);
+  const [isAborting, setIsAborting] = useState<boolean>(false);
   const processedSections = useRef(new Set());
-
 
   const syncChaosMutation = trpc.syncChaos.useMutation({
     onSuccess: () => {},
@@ -71,27 +87,26 @@ export const PlaygroundTabs = () => {
   const generateBlogOutline = async () => {
     console.log("generate blog outline when model is", selectedModel);
     const currentStream = streamManager.getStreamStatus();
-    
+
     if (currentStream) {
       setShowStreamDialog(true);
-      setPendingOperation('outline');
+      setPendingOperation("outline");
       return;
     }
 
     startOutlineGeneration();
   };
 
-  
   const generateBlog = async () => {
     if (!user || !blogId) {
       throw new Error("User/blog id required");
     }
 
     const currentStream = streamManager.getStreamStatus();
-    
+
     if (currentStream) {
       setShowStreamDialog(true);
-      setPendingOperation('blog');
+      setPendingOperation("blog");
       return;
     }
 
@@ -99,10 +114,9 @@ export const PlaygroundTabs = () => {
     startBlogGeneration();
   };
 
-
   const startOutlineGeneration = () => {
     setSections([]);
-    processedSections.current.clear(); 
+    processedSections.current.clear();
     setIsScanning(true);
     console.log("scanning set to true");
     socketClient.sendMessage({
@@ -139,21 +153,21 @@ export const PlaygroundTabs = () => {
   };
 
   const handleConfirmAbort = async () => {
-    setIsAborting(true)
-   await streamManager.abortStream();
-    editor?.commands.clearContent()
-    setIsAborting(false)
+    setIsAborting(true);
+    await streamManager.abortStream();
+    editor?.commands.clearContent();
+    setIsAborting(false);
     // Start the pending operation
-    if (pendingOperation === 'outline') {
+    if (pendingOperation === "outline") {
       startOutlineGeneration();
-    } else if (pendingOperation === 'blog') {
+    } else if (pendingOperation === "blog") {
       startBlogGeneration();
     }
 
     // Reset dialog state
     setShowStreamDialog(false);
     setPendingOperation(null);
-    setActiveTab("outline")
+    setActiveTab("outline");
   };
 
   const handleDelete = (index: number) => {
@@ -241,11 +255,34 @@ export const PlaygroundTabs = () => {
     URL.revokeObjectURL(url);
   };
 
-  useEffect(() => {
-    if(user){
-      streamManager.initialize(user.id)
+  const handleToolsPanelClick = (event: string, value?: string) => {
+    if (!editor) return;
+
+    const command = commandsMap.get(event);
+    if (command) {
+      const { from, to } = editor.state.selection;
+      const success = command(editor, value);
+      if (!success) {
+        toast({
+          variant: "default",
+          title: "Failed to execute the command",
+        });
+        return;
+      }
+
+      editor
+      .chain()
+      .focus()
+      .setTextSelection({ from, to })
+      .run();
     }
-  },[user])
+  };
+
+  useEffect(() => {
+    if (user) {
+      streamManager.initialize(user.id);
+    }
+  }, [user]);
 
   useEffect(() => {
     outlineParser.subscribe((section) => {
@@ -254,13 +291,13 @@ export const PlaygroundTabs = () => {
         processedSections.current.clear(); // Clear on end
         return;
       }
-  
+
       setSections((prev) => {
         // Check our ref instead of previous state
         if (processedSections.current.has(section.id)) {
           return prev;
         }
-        
+
         processedSections.current.add(section.id);
         return [...prev, section];
       });
@@ -268,51 +305,67 @@ export const PlaygroundTabs = () => {
   }, []);
 
   return (
-    <div className="h-[calc(100vh-64px)] flex-1 flex flex-col min-h-0">
-      <div className="flex-1 p-6 overflow-hidden">
+    <div className="h-screen flex-1 flex flex-col min-h-0">
+      <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+        <div className="flex items-center flex-1 gap-2">
+          <SidebarTrigger className="bg-background text-foreground -ml-1" />
+          <Separator orientation="vertical" className="h-4" />
+        </div>
+
+        <div className="flex items-center gap-4">
+          {activeTab === "playground" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="bg-background text-foreground"
+                >
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onSelect={() => handleExport("html")}>
+                  HTML
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => handleExport("json")}>
+                  JSON
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <ModeToggle />
+        </div>
+      </header>
+
+      <div className="flex-1 p-3 overflow-hidden">
         <Tabs
           className="h-full flex flex-col"
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as TabsType)}
         >
-          <div className="w-full flex items-center justify-between">
-            <TabsList className="">
-              <TabsTrigger value="upload">
-                <Upload className="mr-2 h-4 w-4" />
-                Upload
+          <div className="flex items-center justify-between mb-2">
+            <TabsList>
+              <TabsTrigger value="upload" className="group">
+                <Upload className="h-4 w-4" />
+                <span className="max-w-0 overflow-hidden group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 ease-in-out">
+                  Upload
+                </span>
               </TabsTrigger>
-              <TabsTrigger value="outline">
-                <Upload className="mr-2 h-4 w-4" />
-                Outline
+              <TabsTrigger value="outline" className="group">
+                <Upload className="h-4 w-4" />
+                <span className="max-w-0 overflow-hidden group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 ease-in-out">
+                  Outline
+                </span>
               </TabsTrigger>
-              <TabsTrigger value="playground">
-                <Palette className="mr-2 h-4 w-4" />
-                Playground
+              <TabsTrigger value="playground" className="group">
+                <Palette className="h-4 w-4" />
+                <span className="max-w-0 overflow-hidden group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 ease-in-out">
+                  Playground
+                </span>
               </TabsTrigger>
             </TabsList>
-            {activeTab === "playground" && (
-              <div className="flex-1 flex justify-end space-x-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="bg-background text-foreground"
-                    >
-                      <FileDown className="mr-2 h-4 w-4" />
-                      Export
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onSelect={() => handleExport("html")}>
-                      HTML
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleExport("json")}>
-                    JSON
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )}
+            <FormattingToolsPanel handleToolsPanelClick={handleToolsPanelClick} />
           </div>
 
           <TabsContent value="upload">
@@ -377,7 +430,9 @@ export const PlaygroundTabs = () => {
             value="outline"
             className="h-[calc(100vh-160px)] flex flex-col gap-4"
           >
-            <Card className={`flex-1 flex flex-col overflow-hidden ${isScanning && "animate-border-pulse"}`}>
+            <Card
+              className={`flex-1 flex flex-col overflow-hidden ${isScanning && "animate-border-pulse"}`}
+            >
               <CardHeader className="shrink-0">
                 <CardTitle>Blog Outline</CardTitle>
                 <CardDescription>
@@ -393,7 +448,6 @@ export const PlaygroundTabs = () => {
                 />
               </CardContent>
             </Card>
-            {/* <div className="w-fit shrink-0 mt-4"> */}
             <Button
               className="w-fit shrink-0 bg-gradient-to-b from-[#1a1a1c] to-[#3d3e43] hover:opacity-90 transition-opacity"
               onClick={() => generateBlog()}
@@ -408,15 +462,14 @@ export const PlaygroundTabs = () => {
                 "Generate Blog"
               )}
             </Button>
-            {/* </div> */}
           </TabsContent>
 
           <TabsContent
-            className="h-[calc(100vh-160px)] flex flex-col gap-4"
+            className="h-[calc(100vh-140px)] flex flex-col"
             value="playground"
           >
             <Card className="border-none shadow-none flex-1 flex items-center justify-center bg-background">
-              <div className="w-full max-w-4xl mx-auto px-4">
+              <div className="w-full h-full max-w-4xl">
                 <PrimaryEditor />
               </div>
             </Card>
@@ -429,18 +482,22 @@ export const PlaygroundTabs = () => {
           <DialogHeader>
             <DialogTitle>Stream in Progress</DialogTitle>
             <DialogDescription>
-              There's an active stream running. Starting a new generation will cancel the current progress. Are you sure you want to continue?
+              There's an active stream running. Starting a new generation will
+              cancel the current progress. Are you sure you want to continue?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setShowStreamDialog(false);
-              setPendingOperation(null);
-            }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowStreamDialog(false);
+                setPendingOperation(null);
+              }}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleConfirmAbort}>
-            {isAborting ? (
+              {isAborting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Aborting stream...
@@ -455,9 +512,3 @@ export const PlaygroundTabs = () => {
     </div>
   );
 };
-
-
-
-
-
-

@@ -1,6 +1,6 @@
 import { useEditorConfig } from "@/hooks/useEditorConfig"
 import { useDashboard } from "@/providers/dashboard-provider"
-import { usePlayground } from "@/providers/playground-provider"
+import { useCustomEditor, useDropdown, useSelection } from "@/providers/playground-provider"
 import { useUserStore } from "@/store/useUserStore"
 import { commandsMap } from "@/utils/commandsMap"
 import { Button, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, useToast } from "@dumpanddone/ui"
@@ -16,8 +16,9 @@ import { EditorContent, useEditor } from "@tiptap/react"
 import { trpc } from "@/utils/trpc"
 
 export const SlashCommandMenu = () => {
-  const { editor, coords, selectionInfo, setSelectionInfo, isDropdownOpen, setIsDropdownOpen } =
-    usePlayground();
+  const { editor } = useCustomEditor();
+  const { coords, selectionInfo, setSelectionInfo } = useSelection();
+  const { isDropdownOpen, setIsDropdownOpen } = useDropdown();
   const { blogData } = useDashboard();
   const userID = useUserStore((state) => state.user?.id);
   const selectedModel = useUserStore((state) => state.selectedModel);
@@ -108,7 +109,7 @@ export const SlashCommandMenu = () => {
     }
 
     // Get the selection boundaries from selectionInfo
-    const { from, to } = selectionInfo.selectionBoundaries;
+    const { from, to } = selectionInfo.selectionRange;
 
     try {
       // Delete the selected content first

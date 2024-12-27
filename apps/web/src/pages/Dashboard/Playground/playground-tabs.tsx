@@ -50,13 +50,14 @@ type TabsType = "upload" | "outline" | "playground";
 export const PlaygroundTabs = () => {
   const { toast } = useToast()
   const { blogId } = useParams({ from: BlogEditorRoute.id });
+  const user = useUserStore((state) => state.user);
+  const currentActiveBlogData = user?.blogs.find(blog => blog.id === blogId)
   const { editor } = useCustomEditor();
   const { selectedTab } = useSearch({ from: BlogEditorRoute.id });
-  const user = useUserStore((state) => state.user);
   const setModelInZustand = useUserStore((state) => state.setSelectedModel);
-  const [content, setContent] = useState<string>("");
+  const [content, setContent] = useState<string>(currentActiveBlogData?.chaos || "");
   const [activeTab, setActiveTab] = useState<TabsType>(selectedTab || "upload");
-  const [sections, setSections] = useState<OutlineSectionType[]>([]);
+  const [sections, setSections] = useState<OutlineSectionType[]>(currentActiveBlogData?.outline.sections || []);
   const [isScanning, setIsScanning] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelsType>("claude");
   const [showStreamDialog, setShowStreamDialog] = useState(false);
@@ -136,7 +137,6 @@ export const PlaygroundTabs = () => {
   };
 
   const startBlogGeneration = () => {
-    editor?.commands.clearContent();
     socketClient.sendMessage({
       type: "START_BLOG_STREAM",
       selectedModel: selectedModel,
@@ -144,7 +144,8 @@ export const PlaygroundTabs = () => {
       userId: user!.id!,
       blogId: blogId,
     });
-
+    console.log("STREAM REQ SENT", selectedModel);
+    editor?.commands.clearContent();
     syncOutlineMutation.mutate({
       outline: { sections: sections },
       blogId: blogId,

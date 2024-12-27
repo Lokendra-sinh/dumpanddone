@@ -6,50 +6,14 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-  Input,
-  Label,
   Separator,
   Button,
 } from "@dumpanddone/ui";
-import { Loader2, User } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Formik, Form, Field } from "formik";
-import * as z from "zod";
 import { useUserStore } from "@/store/useUserStore";
 import { trpc } from "@/utils/trpc";
 import { useGoogleLogin } from "@react-oauth/google";
 
-const registerSchema = z
-  .object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
-    email: z.string().email("Please enter a valid email address"),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-      .regex(/[0-9]/, "Password must contain at least one number"),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
-
-type RegisterFormData = z.infer<typeof registerSchema>;
-
-const validate = (values: RegisterFormData) => {
-  try {
-    registerSchema.parse(values);
-    return {};
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return error.issues.reduce((acc, issue) => {
-        acc[issue.path[0]] = issue.message;
-        return acc;
-      }, {});
-    }
-  }
-};
 
 export function Register() {
   const setUser = useUserStore((state) => state.setUser);
@@ -59,6 +23,7 @@ export function Register() {
   const googleSignupMutation = trpc.googleLogin.useMutation({
     onSuccess: (res) => {
       setUser(res.user);
+      setIsLoading(false)
       navigate({
         to: "/dashboard",
       });
@@ -82,19 +47,6 @@ export function Register() {
     window.location.href = `https://github.com/login/oauth/authorize?client_id=${import.meta.env.VITE_GITHUB_CLIENT_ID}&redirect_uri=${import.meta.env.VITE_GITHUB_REDIRECT_URI}&scope=user`;
   };
 
-  const handleSubmit = async (values: RegisterFormData) => {
-    try {
-      setIsLoading(true);
-      console.log(values);
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    } catch (error) {
-      console.error("Registration error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="w-full min-h-screen flex items-center justify-center">
       <Card className="w-[400px]">
@@ -107,7 +59,9 @@ export function Register() {
         <CardContent>
           <div className="grid w-full items-center gap-4">
             <Button
-              onClick={() => login()}
+              onClick={() => {
+                setIsLoading(true)
+                login()}}
               className="w-full"
               variant="outline"
               disabled={isLoading}
@@ -154,94 +108,6 @@ export function Register() {
             </Button>
           </div>
           <Separator className="my-4" />
-          <Formik
-            initialValues={{
-              name: "",
-              email: "",
-              password: "",
-              confirmPassword: "",
-            }}
-            validate={validate}
-            onSubmit={handleSubmit}
-            validateOnChange={true}
-            validateOnBlur={true}
-          >
-            {({ errors, touched, isValid }) => (
-              <Form className="grid w-full items-center gap-4">
-                <div className="flex flex-col space-y-1.5">
-                  <Label htmlFor="name">Name</Label>
-                  <Field
-                    as={Input}
-                    id="name"
-                    name="name"
-                    placeholder="John Doe"
-                    disabled={isLoading}
-                  />
-                  {touched.name && errors.name && (
-                    <p className="text-sm text-destructive">{errors.name}</p>
-                  )}
-                </div>
-                <div className="flex flex-col space-y-1.5">
-                  <Label htmlFor="email">Email</Label>
-                  <Field
-                    as={Input}
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="m@example.com"
-                    disabled={isLoading}
-                  />
-                  {touched.email && errors.email && (
-                    <p className="text-sm text-destructive">{errors.email}</p>
-                  )}
-                </div>
-                <div className="flex flex-col space-y-1.5">
-                  <Label htmlFor="password">Password</Label>
-                  <Field
-                    as={Input}
-                    id="password"
-                    name="password"
-                    type="password"
-                    disabled={isLoading}
-                  />
-                  {touched.password && errors.password && (
-                    <p className="text-sm text-destructive">
-                      {errors.password}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-col space-y-1.5">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Field
-                    as={Input}
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    disabled={isLoading}
-                  />
-                  {touched.confirmPassword && errors.confirmPassword && (
-                    <p className="text-sm text-destructive">
-                      {errors.confirmPassword}
-                    </p>
-                  )}
-                </div>
-                <CardFooter className="px-0 pt-6">
-                  <Button
-                    className="w-full"
-                    type="submit"
-                    disabled={!isValid || isLoading}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <User className="mr-2 h-4 w-4" />
-                    )}
-                    {isLoading ? "Processing..." : "Register"}
-                  </Button>
-                </CardFooter>
-              </Form>
-            )}
-          </Formik>
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">

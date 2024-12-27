@@ -1,4 +1,4 @@
-import { TiptapDocumentSchema } from './blogSchema';
+import { BlogOutlineSchema, TiptapDocumentSchema } from './blogSchema';
 import z from 'zod'
 
 export const UserSchema = z.object({
@@ -14,7 +14,11 @@ export const UserSchema = z.object({
     ]),
     blogs: z.array(z.object({
       id: z.string(),
-      content: TiptapDocumentSchema
+      content: TiptapDocumentSchema,
+      chaos: z.string(),
+      created_at: z.date(),
+      last_updated: z.date(),
+      outline: BlogOutlineSchema,
     }))
   });
 

@@ -5,7 +5,7 @@ import { AuthContext, BaseContext, router } from "./trpc/initTRPC";
 import { createOrUpdateBlog } from "./routers/create-or-update-blog";
 import Anthropic from "@anthropic-ai/sdk";
 import dotenv from "dotenv";
-import { googleLogin } from "./routers/user";
+import { googleLogin } from "./routers/google-login";
 import { verifyJwtToken } from "./utils/verify-jwt-token";
 import { generateJwtToken } from "./utils/generate-jwt-token";
 import cookieParser from "cookie-parser";
@@ -73,40 +73,64 @@ app.use(
       req,
       res,
     }): Promise<BaseContext & Partial<AuthContext>> => {
-      const token = req.cookies.authToken;
+      try {
+        const token = req.cookies.authToken;
 
-      const baseContextWithRes = {
-        userId: undefined,
-        res: res,
-      };
-      if (!token) return baseContextWithRes;
+        console.log('Request Path:', req.path);
+        console.log('Request Cookies:', req.cookies);
 
-      const verification = verifyJwtToken(token);
+        const baseContextWithRes = {
+          userId: undefined,
+          res: res,
+        };
+        if (!token) return baseContextWithRes;
 
-      if (!verification.decoded) {
-        return baseContextWithRes;
-      }
+        const verification = verifyJwtToken(token);
 
-      if (verification.isExpired) {
-        const newSessionToken = generateJwtToken(verification.decoded.id);
-        res.cookie("authToken", newSessionToken, {
-          httpOnly: true,
-          secure: true,
-          sameSite: "strict",
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
+        if (!verification.decoded) {
+          return baseContextWithRes;
+        }
+
+        if (verification.isExpired) {
+          const newSessionToken = generateJwtToken(verification.decoded.id);
+          res.cookie("authToken", newSessionToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+          });
+          return {
+            userId: verification.decoded.id,
+            res: res,
+          };
+        }
+
         return {
           userId: verification.decoded.id,
           res: res,
         };
+      } catch (error) {
+        console.error('Context Creation Error:', {
+          error,
+          stack: error instanceof Error ? error.stack : undefined
+        });
+        throw error;
       }
-
-      return {
-        userId: verification.decoded.id,
-        res: res,
-      };
     },
-  }),
+    onError: ({ error, type, path, input }) => {
+      console.error('TRPC Error:', {
+        type,
+        path,
+        error: {
+          message: error.message,
+          code: error.code,
+          stack: error.stack,
+          cause: error.cause
+        },
+        input
+      }); 
+    }
+  })
 );
 
 httpServer.listen(4000, () => {

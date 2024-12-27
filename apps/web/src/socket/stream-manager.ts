@@ -1,4 +1,4 @@
-import { socketClient } from './socket-client';
+import { socketClient } from "./socket-client";
 import { blogParser } from "./blog-parser";
 import { outlineParser } from "./outline-parser";
 import { ModelsType, OutlineSectionType } from "@dumpanddone/types";
@@ -28,31 +28,66 @@ interface StreamMetadata {
   progress?: number;
 }
 
+type StreamErrorEvent = {
+  type: StreamType;
+  error: Error | string;
+  metadata?: {
+    requestId: string;
+    userId: string;
+    blogId: string;
+  };
+};
+
+type StreamErrorListener = (error: StreamErrorEvent) => void;
+
 class StreamManager {
-  private userId: string | null = null
+  private userId: string | null = null;
   private currentStream: StreamMetadata | null = null;
-  private abortCallbacks: Map<string, () => void> = new Map()
+  private abortCallbacks: Map<string, () => void> = new Map();
+  private errorListeners: Set<StreamErrorListener> = new Set();
   private readonly parsers: Record<StreamType, any> = {
     OUTLINE: outlineParser,
     BLOG: blogParser,
-    EDIT_BLOG: blogParser
+    EDIT_BLOG: blogParser,
   };
 
-  initialize(userId: string){
-    if(this.userId){
-     return
+  initialize(userId: string) {
+    if (this.userId) {
+      return;
     }
 
-    this.userId = userId
+    this.userId = userId;
+  }
+
+  addErrorListener(listener: StreamErrorListener) {
+    this.errorListeners.add(listener);
+    return () => this.removeErrorListener(listener); // Return cleanup function
+  }
+
+  // Remove error listener
+  removeErrorListener(listener: StreamErrorListener) {
+    this.errorListeners.delete(listener);
+  }
+
+  // Notify all error listeners
+  private notifyErrorListeners(error: StreamErrorEvent) {
+    this.errorListeners.forEach((listener) => {
+      try {
+        listener(error);
+      } catch (e) {
+        console.error("Error in stream error listener:", e);
+      }
+    });
   }
 
   private handleStreamStart(type: StreamType, metadata: StreamEventMetadata) {
     if (this.isCurrentlyStreaming()) {
-      throw new Error(`Cannot start ${type} stream while ${this.currentStream?.stream} is in progress`);
+      throw new Error(
+        `Cannot start ${type} stream while ${this.currentStream?.stream} is in progress`
+      );
     }
 
-    socketClient.setDisconnectHandler(() => this.handleDisconnection())
-
+    socketClient.setDisconnectHandler(() => this.handleDisconnection());
 
     this.currentStream = {
       stream: type,
@@ -61,15 +96,43 @@ class StreamManager {
       requestId: metadata.requestId,
       started_at: new Date(),
       completed_at: null,
-      progress: 0
+      progress: 0,
     };
 
     const parser = this.parsers[type];
     if (parser === blogParser) {
-      const streamType = type === 'BLOG' ? 'WRITE_BLOG' : 'EDIT_BLOG';
+      const streamType = type === "BLOG" ? "WRITE_BLOG" : "EDIT_BLOG";
       parser.setStreamType(streamType);
+    }
+    parser.reset();
   }
-  parser.reset();
+
+  private handleStreamError(error: any) {
+    if (!this.currentStream) return;
+
+    const errorEvent: StreamErrorEvent = {
+      type: this.currentStream.stream,
+      error:
+        error instanceof Error
+          ? error
+          : error.message || "Unknown stream error",
+      metadata: {
+        requestId: this.currentStream.requestId,
+        userId: this.userId!,
+        blogId: "", // You might want to track blogId in currentStream
+      },
+    };
+
+    // Update stream state
+    this.currentStream.state = "ERROR";
+    this.currentStream.error = errorEvent.error.toString();
+
+    // Notify listeners
+    this.notifyErrorListeners(errorEvent);
+
+    // Cleanup
+    socketClient.removeDisconnectHandler();
+    this.currentStream = null;
   }
 
   private handleStreamProgress(event: MessageEvent) {
@@ -88,38 +151,29 @@ class StreamManager {
 
   private handleStreamEnd() {
     if (!this.currentStream) return;
-    
+
     // First cleanup parser
     const parser = this.parsers[this.currentStream.stream];
-    if(this.currentStream.stream === "OUTLINE"){
+    if (this.currentStream.stream === "OUTLINE") {
       parser.finalize();
     }
 
-    if(this.currentStream.stream === "BLOG"){
-      parser.finalize()
+    if (this.currentStream.stream === "BLOG") {
+      parser.finalize();
     }
-    
+
     // Then update stream state
     this.currentStream.completed_at = new Date();
     this.currentStream.state = "WAITING";
-    
+
     // Finally remove handler and reset stream
     socketClient.removeDisconnectHandler();
     this.currentStream = null;
   }
 
-  private handleStreamError(error: any) {
-    if (!this.currentStream) return;
-
-    this.currentStream.state = "ERROR";
-    this.currentStream.error = error.message;
-
-    // this.abortStream();
-  }
-
   private handleDisconnection() {
     if (!this.currentStream) return;
- 
+
     this.currentStream.state = "CANCELLED";
     socketClient.disconnect();
     socketClient.removeDisconnectHandler();
@@ -153,9 +207,13 @@ class StreamManager {
         case "EDIT_BLOG_END":
           this.handleStreamEnd();
           break;
-        
+        case "BLOG_ERROR":
+        case "OUTLINE_ERROR":
+        case "EDIT_BLOG_ERROR":
+          this.handleStreamError(new Error(metadata.error));
+          break;
         case "STREAM_ABORTED":
-          this.abortedStream(metadata)
+          this.abortedStream(metadata);
           break;
         default:
           console.warn(`Unknown event type received: ${type}`);
@@ -172,13 +230,13 @@ class StreamManager {
     return this.currentStream?.state === "BUILDING";
   }
 
-  abortedStream(metadata: StreamMetadata){
-    const resolveAbort = this.abortCallbacks.get(metadata.requestId)
-    if(resolveAbort){
-      resolveAbort()
-      this.abortCallbacks.delete(metadata.requestId)
-      socketClient.removeDisconnectHandler()
-      this.currentStream = null
+  abortedStream(metadata: StreamMetadata) {
+    const resolveAbort = this.abortCallbacks.get(metadata.requestId);
+    if (resolveAbort) {
+      resolveAbort();
+      this.abortCallbacks.delete(metadata.requestId);
+      socketClient.removeDisconnectHandler();
+      this.currentStream = null;
     }
   }
 
@@ -188,27 +246,31 @@ class StreamManager {
     return new Promise((resolve) => {
       // Store the resolve function using requestId as key
       this.abortCallbacks.set(this.currentStream!.requestId, resolve);
-      
-      console.log("Sending abort signal to server for ", this.currentStream?.requestId);
+
+      console.log(
+        "Sending abort signal to server for ",
+        this.currentStream?.requestId
+      );
       // Send abort request
       socketClient.sendMessage({
         type: "ABORT_STREAM",
         userId: this.userId!,
-        requestId: this.currentStream!.requestId
+        requestId: this.currentStream!.requestId,
       });
     });
   }
 
   getStreamStatus() {
     if (!this.currentStream) return null;
-    
+
     return {
       type: this.currentStream.stream,
       state: this.currentStream.state,
       progress: this.currentStream.progress,
-      duration: this.currentStream?.completed_at 
-        ? this.currentStream.completed_at.getTime() - this.currentStream.started_at.getTime()
-        : Date.now() - this.currentStream.started_at.getTime()
+      duration: this.currentStream?.completed_at
+        ? this.currentStream.completed_at.getTime() -
+          this.currentStream.started_at.getTime()
+        : Date.now() - this.currentStream.started_at.getTime(),
     };
   }
 }

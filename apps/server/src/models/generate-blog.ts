@@ -76,6 +76,7 @@ export async function generateBlogContent(
         rawContent = await generateWithDeepseek(chaos, outline);
         break;
       case "gpt":
+        console.log("GPT will generate the blog now");
         rawContent = await generateWithGPT(chaos, outline);
         break;
       default:

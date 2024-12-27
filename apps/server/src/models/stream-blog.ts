@@ -82,53 +82,39 @@ async function streamWithDeepseek(
 }
 
 async function streamWithGPT(
- chaos: string, 
- outline: OutlineSectionType[], 
- requestState: RequestStateType
+  chaos: string, 
+  outline: OutlineSectionType[], 
+  requestState: RequestStateType
 ) {
- const prompt = blogGeneratorPrompt(chaos, outline);
- const stream = await openai.chat.completions.create({
-   messages: [
-     { 
-       role: "system", 
-       content: "You are a specialized blog content generator that streams content with STATE and NODE delimiters." 
-     },
-     { role: "user", content: prompt }
-   ],
-   model: "gpt-4",
-   stream: true,
-   temperature: 0.7,
-   max_tokens: 8000,
- });
+  console.log("Starting GPT stream...");
+  const prompt = blogGeneratorPrompt(chaos, outline);
+  
+  const stream = await openai.chat.completions.create({
+    messages: [
+      { 
+        role: "system", 
+        content: "You are a specialized blog content generator that streams content with STATE and NODE delimiters." 
+      },
+      { role: "user", content: prompt }
+    ],
+    model: "gpt-4o", 
+    stream: true,
+    temperature: 0.7,
+    max_tokens: 16000,
+  });
 
- let currentChunk = '';
- for await (const chunk of stream) {
-   const content = chunk.choices[0]?.delta?.content || '';
-   if (!content) continue;
-
-   if(requestState.status === 'aborted'){
-    break;
+  for await (const chunk of stream) {
+    const content = chunk.choices[0]?.delta?.content;
+    if (content && requestState.status !== 'aborted') {
+      requestState.ws.send(JSON.stringify({
+        type: 'BLOG_PROGRESS',
+        content,
+        userId: requestState.userId,
+        blogId: requestState.blogId,
+        selectedModel: "gpt" 
+      }));
+    }
   }
-   
-   currentChunk += content;
-   
-   if (currentChunk.includes('\n')) {
-     const lines = currentChunk.split('\n');
-     currentChunk = lines.pop() || '';
-     
-     for (const line of lines) {
-       if (line.trim()) {
-         requestState.ws.send(JSON.stringify({
-           type: 'BLOG_PROGRESS',
-           content: line,
-           userId: requestState.userId,
-           blogId: requestState.blogId,
-           selectedModel: "gpt" 
-         }));
-       }
-     }
-   }
- }
 }
 
 interface StartBlogStreamProps {
@@ -163,6 +149,7 @@ export async function startBlogStreaming(props: StartBlogStreamProps) {
        await streamWithDeepseek(blogData.chaos, outline, requestState);
        break;
      case "gpt":
+      console.log("will be streaming wih gpt now");
        await streamWithGPT(blogData.chaos, outline, requestState);
        break;
      default:

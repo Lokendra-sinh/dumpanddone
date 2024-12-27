@@ -1,5 +1,5 @@
 import { Editor, EditorContent } from "@tiptap/react";
-import { CardContent } from "@dumpanddone/ui";
+import { CardContent, useToast } from "@dumpanddone/ui";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { CHARACTER_LIMIT } from "@/utils/constants";
 import { useCustomEditor, useSelection } from "@/providers/playground-provider";
@@ -12,6 +12,7 @@ import { useParams } from "@tanstack/react-router";
 import { BlogEditorRoute } from "@/routes/routes";
 import { createSelectionHandler } from "@/lib/editor-helpers";
 import { isValidTiptapDocument } from "@/lib/editor-helpers";
+import { streamManager } from "@/socket/stream-manager";
 
 
 
@@ -21,6 +22,7 @@ export const PrimaryEditor = () => {
   const userId = useUserStore((state) => state.user?.id);
   const { blogId } = useParams({ from: BlogEditorRoute.id });
   const editorContentRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast()
  
   // Split into specific contexts
   const { editor } = useCustomEditor();
@@ -164,11 +166,32 @@ export const PrimaryEditor = () => {
         });
       },
     };
+
+    const errorCleanup = streamManager.addErrorListener((error) => {
+      console.error('Stream error:', error);
+      
+      // Always clean up loading nodes on error
+      deleteAllLoadingNodes(editor);
+      
+      // Handle different error types
+      switch(error.type) {
+        case 'BLOG':
+        case 'OUTLINE':
+        case 'EDIT_BLOG':
+          toast({
+            title: "Failed to generate",
+            variant: "destructive"
+          });
+          break;
+      }
+    });
   
     blogParser.subscribeToWriteBlog(listener);
   
     return () => {
       blogParser.unsubscribeFromWriteBlog(listener);
+      errorCleanup()
+      deleteAllLoadingNodes(editor)
     };
   }, [editor, userId, blogId, deleteAllLoadingNodes]);
 

@@ -417,6 +417,7 @@ export const EditorFormattingOptionsDropdown = memo(() => {
     const listener = {
       onNode: (node) => {
         deleteAllLoadingNodes(subEditor);
+        console.log("Inserting the node", node);
         subEditor.commands.insertContent(node);
       },
       onState: (state) => {

@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { publicProcedure } from "../trpc/initTRPC";
 import { getUser } from "../db/queries/queryUser";
-import { LoginResponseSchema, LoginResponseSchemaType } from "./user";
+import { LoginResponseSchema, LoginResponseSchemaType } from "./google-login";
 import { getBlogsByUserId } from "../db/queries/blog";
 
 export const silentAuth = publicProcedure

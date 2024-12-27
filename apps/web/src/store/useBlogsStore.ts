@@ -1,9 +1,13 @@
-import { TiptapDocument } from "@dumpanddone/types"
+import { BlogOutlineType, TiptapDocument } from "@dumpanddone/types"
 import { create } from "zustand"
 
 export interface BlogType {
     id: string,
     content: TiptapDocument,
+    chaos: string,
+    outline: BlogOutlineType,
+    created_at: string,
+    last_updated: string,
 }
 
 

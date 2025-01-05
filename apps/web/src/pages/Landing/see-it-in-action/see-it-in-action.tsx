@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { DumpCard } from "./dump-card";
 import { Outline } from "./outline-card";
 import { BlogCard } from "./blog-card";
+import { CustomButton } from "@/components/custom-button";
+import { WaitlistModal } from "../join-waitlist-modal";
 
 type PathData = {
   path: string;
@@ -36,6 +38,7 @@ export const SeeItInAction: React.FC = () => {
   const dumpCardRef = useRef<HTMLDivElement>(null);
   const outlineCardRef = useRef<HTMLDivElement>(null);
   const blogCardRef = useRef<HTMLDivElement>(null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
 
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -46,13 +49,15 @@ export const SeeItInAction: React.FC = () => {
   const [outlineToBlogPaths, setOutlineToBlogPaths] = useState<PathData[]>([]);
 
   // The array of active beam particles each frame
-  const [particles, setParticles] = useState<{
-    x: number;
-    y: number;
-    pathIndex: number;
-    particleIndex: number;
-    isOutlineToBlog?: boolean;
-  }[]>([]);
+  const [particles, setParticles] = useState<
+    {
+      x: number;
+      y: number;
+      pathIndex: number;
+      particleIndex: number;
+      isOutlineToBlog?: boolean;
+    }[]
+  >([]);
 
   // requestAnimationFrame + time
   const animationFrameRef = useRef<number>();
@@ -64,17 +69,17 @@ export const SeeItInAction: React.FC = () => {
   //   4..6s => Outline->Blog beams
   //   6..8s => Blog skeleton sections
   //   8..9s => Pause
-  const beamDurationDumpOutline = 2000;   // 2s
-  const barDuration = 2000;              // 2s
-  const beamDurationOutlineBlog = 2000;  // 2s
-  const blogSkeletonDuration = 2000;     // 2s
-  const pause = 1000;                    // 1s
+  const beamDurationDumpOutline = 2000; // 2s
+  const barDuration = 2000; // 2s
+  const beamDurationOutlineBlog = 2000; // 2s
+  const blogSkeletonDuration = 2000; // 2s
+  const pause = 1000; // 1s
   const totalCycle =
     beamDurationDumpOutline +
     barDuration +
     beamDurationOutlineBlog +
     blogSkeletonDuration +
-    pause; 
+    pause;
   // => 2 + 2 + 2 + 2 + 1 = 9s
 
   const particlesPerBeam = 12;
@@ -99,9 +104,11 @@ export const SeeItInAction: React.FC = () => {
   ];
 
   // Control Outline bars (2..4s)
-  const [shouldAnimateOutlineBars, setShouldAnimateOutlineBars] = useState(false);
+  const [shouldAnimateOutlineBars, setShouldAnimateOutlineBars] =
+    useState(false);
   // Control Blog skeleton (6..8s)
-  const [shouldAnimateBlogSkeleton, setShouldAnimateBlogSkeleton] = useState(false);
+  const [shouldAnimateBlogSkeleton, setShouldAnimateBlogSkeleton] =
+    useState(false);
 
   // 1) Build paths for Dump->Outline & Outline->Blog
   useEffect(() => {
@@ -180,7 +187,8 @@ export const SeeItInAction: React.FC = () => {
 
   // 2) Animate everything in a 9-second cycle
   useEffect(() => {
-    if (!svgRef.current || !dumpToPaths.length || !outlineToBlogPaths.length) return;
+    if (!svgRef.current || !dumpToPaths.length || !outlineToBlogPaths.length)
+      return;
 
     // Grab the actual <path> references
     const pathElements = Array.from(svgRef.current.querySelectorAll("path"));
@@ -242,7 +250,8 @@ export const SeeItInAction: React.FC = () => {
       // 4..6s => Outline->Blog beams
       if (
         cyclePos >= beamDurationDumpOutline + barDuration &&
-        cyclePos < beamDurationDumpOutline + barDuration + beamDurationOutlineBlog
+        cyclePos <
+          beamDurationDumpOutline + barDuration + beamDurationOutlineBlog
       ) {
         const localTime = cyclePos - (beamDurationDumpOutline + barDuration);
         outlineToBlogPaths.forEach((path, pathIndex) => {
@@ -271,7 +280,8 @@ export const SeeItInAction: React.FC = () => {
 
       // 6..8s => Blog skeleton
       const inBlogSkeletonPhase =
-        cyclePos >= beamDurationDumpOutline + barDuration + beamDurationOutlineBlog &&
+        cyclePos >=
+          beamDurationDumpOutline + barDuration + beamDurationOutlineBlog &&
         cyclePos <
           beamDurationDumpOutline +
             barDuration +
@@ -300,11 +310,15 @@ export const SeeItInAction: React.FC = () => {
       className="w-full flex flex-col items-center py-10 px-20 gap-20 relative"
     >
       <h1 className="text-4xl font-semibold text-primary">See It In Action</h1>
-      <p className="text-base -mt-12 border border-muted-foreground rounded-md px-2 bg-white text-black shadow-[0_0_20px_1px] shadow-accent/40">From chaos to clarity in three steps</p>
-      <div className="w-full h-[650px] border border-muted-foreground/30 rounded-md bg-muted flex flex-col gap-10">
+      <p className="text-base -mt-12 border border-muted-foreground rounded-md px-2 bg-white text-black shadow-[0_0_20px_1px] shadow-accent/40">
+        From chaos to clarity in three steps
+      </p>
+      <div className="w-full h-full rounded-md bg-muted flex flex-col gap-10">
         {/* SVG for beams */}
-
-        <svg ref={svgRef} className="absolute inset-0 w-full h-full pointer-events-none">
+        <svg
+          ref={svgRef}
+          className="absolute inset-0 w-full h-full pointer-events-none"
+        >
           {/* 6 Dump->Outline paths */}
           {dumpToPaths.map(({ path, color }, pathIndex) => (
             <path
@@ -330,9 +344,12 @@ export const SeeItInAction: React.FC = () => {
 
           {/* Beam particles */}
           {particles.map((p, i) => {
-            const pathSet = p.isOutlineToBlog ? outlineToBlogPaths : dumpToPaths;
+            const pathSet = p.isOutlineToBlog
+              ? outlineToBlogPaths
+              : dumpToPaths;
             const color = pathSet[p.pathIndex].darkColor;
-            const opacity = (particlesPerBeam - p.particleIndex) / particlesPerBeam;
+            const opacity =
+              (particlesPerBeam - p.particleIndex) / particlesPerBeam;
 
             return (
               <BeamParticle
@@ -348,8 +365,9 @@ export const SeeItInAction: React.FC = () => {
 
         {/* Labels */}
         <div className="flex items-center justify-between px-40 mt-10 gap-4">
-          
-          <span className="text-medium text-base text-black border border-muted-foreground/20 px-2 rounded-md bg-white shadow-[0_0_20px_2px] shadow-amber-400">Dump</span>
+          <span className="text-medium text-base text-black border border-muted-foreground/20 px-2 rounded-md bg-white shadow-[0_0_20px_2px] shadow-amber-400">
+            Dump
+          </span>
           <span className="h-[1px] flex-1 bg-muted-foreground/20"></span>
           <span className="text-medium text-base text-black">Outline</span>
           <span className="h-[1px] flex-1 bg-muted-foreground/20"></span>
@@ -359,22 +377,51 @@ export const SeeItInAction: React.FC = () => {
         {/* Cards */}
         <div className="w-full flex items-center justify-between px-20 gap-36">
           <div className="w-1/3 flex flex-col bg-background p-4 rounded-md gap-4">
-          <p className="w-full text-primary/70 text-base">Just dump your scattered thoughts, notes, or conversations. No organization needed. No formatting required.</p>
-          <DumpCard dumpCardRef={dumpCardRef} />
+            <p className="w-full text-primary/70 text-base">
+              Just dump your scattered thoughts, notes, or conversations. No
+              organization needed. No formatting required.
+            </p>
+            <DumpCard dumpCardRef={dumpCardRef} />
           </div>
           <div className="w-1/3 flex flex-col bg-background p-4 rounded-md gap-4">
-          <p className="w-full text-primary/70 text-base">Watch as we organize your ideas into a clear, logical structure. Don't like something? Just tweak it.</p>
-          <Outline outlineCardRef={outlineCardRef} shouldAnimate={shouldAnimateOutlineBars} />
+            <p className="w-full text-primary/70 text-base">
+              Watch as we organize your ideas into a clear, logical structure.
+              Don't like something? Just tweak it.
+            </p>
+            <Outline
+              outlineCardRef={outlineCardRef}
+              shouldAnimate={shouldAnimateOutlineBars}
+            />
           </div>
           <div className="w-1/3 flex flex-col bg-background p-4 rounded-md gap-4">
-          <p className="w-full text-primary/70 text-base">Get a professionally structured blog post that sounds exactly like you. Your voice, just better organized.</p>
-          <BlogCard blogCardRef={blogCardRef} shouldAnimate={shouldAnimateBlogSkeleton} />
+            <p className="w-full text-primary/70 text-base">
+              Get a professionally structured blog post that sounds exactly like
+              you. Your voice, just better organized.
+            </p>
+            <BlogCard
+              blogCardRef={blogCardRef}
+              shouldAnimate={shouldAnimateBlogSkeleton}
+            />
           </div>
         </div>
 
-        <div className="w-full flex items-center justify-between px-20 gap-36 -mt-10">
+        <div className="relative w-full flex flex-col items-center justify-center gap-6">
+          <span className="text-black text-xl mt-10">
+            Ready to transform your ideas?
+          </span>
+          <CustomButton
+            onClick={() => setIsModalOpen(true)}
+            baseColor="#2463eb"
+            className="w-fit px-2 py-1 text-base text-white"
+          >
+            <p>Try now</p>
+          </CustomButton>
         </div>
       </div>
+      <WaitlistModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+      />
     </div>
   );
 };

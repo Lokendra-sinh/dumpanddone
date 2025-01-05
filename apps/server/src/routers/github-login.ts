@@ -7,6 +7,7 @@ import { addUser } from "../db/queries/addUser";
 import { generateJwtToken } from "../utils/generate-jwt-token";
 import { COOKIE_CONFIG } from "../utils/cookies";
 import { getBlogsByUserId } from "../db/queries/blog";
+import { serializeDate } from "../utils/date-helpers";
 
 const GithubAccessTokenResponseSchema = z.object({
   access_token: z.string(),
@@ -117,8 +118,8 @@ function normalizeGithubUser(
   return {
     name: githubUser.name || githubUser.login,
     email: githubUser.email,
-    avatar: githubUser.avatar_url,
-    created_at: new Date(),
+    avatar: githubUser.avatar_url || undefined,
+    created_at: serializeDate( new Date()),
     auth_method: "github",
   };
 }

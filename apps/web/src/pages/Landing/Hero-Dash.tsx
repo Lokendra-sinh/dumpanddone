@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import DashImage from "../../assets/images/dashboard.png";
+import DashImage from "/images/dashboard.png";
 
 interface HeroDashProps {
   isGlowing: boolean;

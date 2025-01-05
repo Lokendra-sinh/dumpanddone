@@ -6,7 +6,7 @@ interface User {
   id: string,
   name: string;
   email: string;
-  avatar: string;
+  avatar?: string;
   auth_method: string;
   created_at: string;
   blogs: BlogType[]

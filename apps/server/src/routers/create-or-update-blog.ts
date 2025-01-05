@@ -8,6 +8,8 @@ import { blogs, users } from "../db/schema";
 import { OutlineSectionSchema } from "@dumpanddone/types";
 import { and, eq } from "drizzle-orm";
 import { addOrUpdateBlog } from "../db/queries/blog";
+import { fetchChaosFromR2 } from "../r2/store";
+import { serializeDate } from "../utils/date-helpers";
 // import { addBlog } from "../db/queries/addBlog";
 
 
@@ -49,39 +51,60 @@ export const createOrUpdateBlog = protectedProcedure
       throw new TRPCError({
         code: "PARSE_ERROR",
         message: "Blog ID cannot be empty",
-      })
+      });
     }
 
-    const blogData = await db.select().from(blogs).where(and(
-        eq(blogs.user_id, userId),
-        eq(blogs.id, blogId)
+    const blogData = await db
+      .select()
+      .from(blogs)
+      .where(
+        and(
+          eq(blogs.user_id, userId),
+          eq(blogs.id, blogId)
+        )
       )
-    ).limit(1)
+      .limit(1);
 
-    const chaos = blogData[0]?.chaos as string
+    if (!blogData[0]?.chaos_path) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Blog chaos content not found",
+      });
+    }
 
     try {
+      console.log("Fetching chaos from R2");
+      const chaos = await fetchChaosFromR2({ 
+        chaosPath: blogData[0].chaos_path 
+      });
+
       console.log("Generating blog data");
+      const blogContent = await generateBlogContent(chaos, outline, model);
+      console.log("Blogdata before adding to db is", blogContent);
 
-      const blogData = await generateBlogContent(chaos, outline, model);
-      console.log("Blogdata before adding to db is", blogData);
-
-      await addOrUpdateBlog({userId, blogId, content: blogData, outline: {sections: outline, created_at: new Date(), updated_at: new Date()}})
+      await addOrUpdateBlog({
+        userId, 
+        blogId, 
+        content: blogContent, 
+        outline: {
+          sections: outline, 
+          created_at: serializeDate(new Date()), 
+          updated_at: serializeDate(new Date())
+        }
+      });
 
       return {
         status: "success",
         data: {
           blogId: blogId,
-          blogData: blogData,
+          blogData: blogContent,
         },
       };
     } catch (error) {
       console.log("ERROR is", error);
-      // Instead of returning error, throw TRPCError
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to generate blog content",
-        // Optional: include cause
         cause: error,
       });
     }

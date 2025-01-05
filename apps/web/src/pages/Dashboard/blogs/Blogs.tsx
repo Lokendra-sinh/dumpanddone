@@ -94,7 +94,7 @@ const Blogs = () => {
   }
 
   return (
-    <div className="min-h-[calc(100vh-64px)] flex-1 flex flex-col bg-background">
+    <div className="min-h-[calc(100vh-64px)] flex-1 flex flex-col bg-card">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full h-full">
       {/* Fixed Header */}
       <div className="py-8 sticky top-0 bg-background z-10">

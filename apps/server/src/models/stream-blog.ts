@@ -3,6 +3,8 @@ import { blogGeneratorPrompt } from "../prompts/generate-blog-instructions";
 import { ModelsType, OutlineSectionType } from "@dumpanddone/types";
 import { RequestStateType } from "../ws/socket";
 import { getBlogById } from "../db/queries/blog";
+import { fetchChaosFromR2 } from "../r2/store";
+import { TRPCError } from "@trpc/server";
 
 async function streamWithClaude(
   chaos: string, 
@@ -38,7 +40,6 @@ async function streamWithClaude(
 
     // Handle stream completion
     stream.on('end', () => {
-      console.log("Blog stream completed");
       resolve(undefined);
     });
 
@@ -86,7 +87,6 @@ async function streamWithGPT(
   outline: OutlineSectionType[], 
   requestState: RequestStateType
 ) {
-  console.log("Starting GPT stream...");
   const prompt = blogGeneratorPrompt(chaos, outline);
   
   const stream = await openai.chat.completions.create({
@@ -125,54 +125,92 @@ userId: string
 blogId: string
 }
 
+async function getBlogWithChaos(blogId: string, userId: string) {
+  // First, get blog data
+  const blogData = await getBlogById(blogId, userId);
+  
+  if (!blogData) {
+      throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Blog not found'
+      });
+  }
+
+  if (!blogData.chaos_path) {
+      // This should never happen in normal flow
+      // If it does, it indicates data corruption
+      throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Blog data corrupted - missing chaos content reference'
+      });
+  }
+
+  try {
+      const chaos = await fetchChaosFromR2({ chaosPath: blogData.chaos_path });
+      return { ...blogData, chaos };
+  } catch (error) {
+      // Convert R2 errors to appropriate TRPC errors
+      if (error instanceof TRPCError) throw error;
+      
+      throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to retrieve blog content',
+          cause: error
+      });
+  }
+}
+
 export async function startBlogStreaming(props: StartBlogStreamProps) {
- const { outline, requestState, selectedModel, userId, blogId } = props
+  const { outline, requestState, selectedModel, userId, blogId } = props;
 
- const blogData = await getBlogById(blogId, userId)
+  try {
+
+      const blogData = await getBlogWithChaos(blogId, userId);
+
+      requestState.ws.send(JSON.stringify({
+          type: "BLOG_START",
+          userId,
+          blogId,
+          selectedModel,
+          requestId: requestState.requestId
+      }));
 
 
- requestState.ws.send(JSON.stringify({
-   type: "BLOG_START",
-   userId,
-   blogId,
-   selectedModel,
-   requestId: requestState.requestId
- }))
+      const streamFunction = {
+          claude: streamWithClaude,
+          deepseek: streamWithDeepseek,
+          gpt: streamWithGPT
+      }[selectedModel] ?? streamWithDeepseek;
+
+      await streamFunction(blogData.chaos, outline, requestState);
 
 
- try {
-   switch (selectedModel) {
-     case "claude":
-       await streamWithClaude(blogData.chaos, outline, requestState);
-       break;
-     case "deepseek":
-       await streamWithDeepseek(blogData.chaos, outline, requestState);
-       break;
-     case "gpt":
-      console.log("will be streaming wih gpt now");
-       await streamWithGPT(blogData.chaos, outline, requestState);
-       break;
-     default:
-       await streamWithDeepseek(blogData.chaos, outline, requestState);
-       break;
-   }
-   
-   requestState.ws.send(JSON.stringify({
-     type: 'BLOG_END',
-     userId,
-     blogId,
-     selectedModel,
-     requestId: requestState.requestId
-   }));
-   
- } catch (error) {
-   console.error("Error streaming blog content:", error);
-   requestState.ws.send(JSON.stringify({
-     type: 'BLOG_ERROR',
-     userId,
-     blogId,
-     selectedModel,
-     error: `Failed to stream blog content: ${error}`
-   }));
- }
+      requestState.ws.send(JSON.stringify({
+          type: 'BLOG_END',
+          userId,
+          blogId,
+          selectedModel,
+          requestId: requestState.requestId
+      }));
+
+  } catch (error) {
+      console.error("Error in blog streaming:", error);
+      
+      // Determine error type and send appropriate message
+      const errorMessage = error instanceof TRPCError 
+          ? error.message
+          : 'An unexpected error occurred while processing your blog';
+
+      requestState.ws.send(JSON.stringify({
+          type: 'BLOG_ERROR',
+          userId,
+          blogId,
+          selectedModel,
+          requestId: requestState.requestId,
+          error: errorMessage
+      }));
+
+      // Re-throw for upstream handling
+      throw error;
+  }
 }

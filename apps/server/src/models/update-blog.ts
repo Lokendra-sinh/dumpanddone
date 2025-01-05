@@ -113,7 +113,6 @@ export async function updateBlogContent({
         throw new Error(`Unsupported model: ${model}`);
     }
 
-    console.log("RAW UPDATE CONTENT:", rawContent);
 
     // Clean and validate JSON structure
     const cleanedJson = cleanAndValidateJson(rawContent);

@@ -4,6 +4,10 @@ import { db } from "..";
 import { blogs } from "../schema";
 import { and, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { r2Client } from "../..";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { serializeDate } from "../../utils/date-helpers";
 
 interface BlogData {
   userId: string;
@@ -34,31 +38,42 @@ export async function getBlogById(blogId: string, userId: string) {
 export async function getBlogsByUserId(userId: string) {
     try {
         const userBlogs = await db
-        .select()
-        .from(blogs)
-        .where(eq(blogs.user_id, userId));
+            .select()
+            .from(blogs)
+            .where(eq(blogs.user_id, userId));
       
-      return userBlogs.map((blog) => {
-        const outline = {
-          ...blog.outline,
-          created_at: new Date(blog.outline.created_at),
-          updated_at: new Date(blog.outline.updated_at)
-        };
+        // Generate presigned URLs for each blog
+        const blogsWithUrls = await Promise.all(userBlogs.map(async (blog) => {
+            const command = new GetObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME,
+                Key: blog.chaos_path
+            });
+            
+            // URL expires in 1 hour
+            const presignedUrl = await getSignedUrl(r2Client, command, { 
+                expiresIn: 3600 
+            });
+            
+            return { 
+                id: blog.id, 
+                content: blog.blog,
+                chaos_url: presignedUrl,
+                outline: {
+                    ...blog.outline,
+                    created_at: blog.outline.created_at,
+                    updated_at: blog.outline.updated_at
+                },
+                created_at: serializeDate( blog.created_at),
+                last_updated: serializeDate( blog.last_updated) 
+            };
+        }));
         
-        return { 
-          id: blog.id, 
-          content: blog.blog,
-          chaos: blog.chaos, 
-          outline, // Now has proper Date objects
-          created_at: blog.created_at,
-          last_updated: blog.last_updated 
-        };
-      });
+        return blogsWithUrls;
     } catch (e) {
-      console.error("Error while finding blogs for userID: ", userId);
-      return [];
+        console.error("Error while finding blogs for userID: ", userId);
+        return [];
     }
-  }
+}
 export async function updateBlog(blogData: BlogData) {
   const { blogId, content, outline } = blogData;
   try {
@@ -81,7 +96,6 @@ export async function createBlog(blogData: BlogData) {
   const { userId, blogId, content, outline } = blogData;
 
   try {
-    console.log("inseritng blog with blog ID", blogId);
     return await db
       .insert(blogs)
       .values({
@@ -89,7 +103,7 @@ export async function createBlog(blogData: BlogData) {
         user_id: userId,
         created_at: new Date(),
         last_updated: new Date(),
-        chaos: "",
+        chaos_path: "",
         outline: outline!,
         blog: content!,
       })
@@ -103,7 +117,6 @@ export async function createBlog(blogData: BlogData) {
 export async function addOrUpdateBlog(blogData: BlogData) {
   try {
     const existingBlog = await getBlogById(blogData.blogId, blogData.userId);
-    console.log("existing blog is", existingBlog);
 
     if (existingBlog) {
       return await updateBlog(blogData);

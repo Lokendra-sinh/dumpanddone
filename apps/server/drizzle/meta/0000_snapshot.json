@@ -1,5 +1,5 @@
 {
-  "id": "9205f49c-d165-4a46-bf9f-e899c9ca5bbf",
+  "id": "fd128842-7848-44f6-866b-c1361f47460c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -34,8 +34,8 @@
           "notNull": true,
           "default": "now()"
         },
-        "chaos": {
-          "name": "chaos",
+        "chaos_path": {
+          "name": "chaos_path",
           "type": "text",
           "primaryKey": false,
           "notNull": true

@@ -5,6 +5,7 @@ import { db } from "../db";
 import { blogs } from "../db/schema";
 import { and, eq } from "drizzle-orm";
 import { BlogOutlineSchema, BlogOutlineType } from '@dumpanddone/types';
+import { serializeDate } from "../utils/date-helpers";
 
 const BlogOutlineWithoutTimeSchema = BlogOutlineSchema.omit({created_at: true, updated_at: true})
 
@@ -45,7 +46,7 @@ async function updateBlogOutline(userId: string, blogId: string, outline: BlogOu
       .set({
         outline: {
             ...outline,
-            updated_at: new Date(),
+            updated_at: serializeDate(new Date()),
             created_at: existingCreatedDate,
         },
         last_updated: new Date()

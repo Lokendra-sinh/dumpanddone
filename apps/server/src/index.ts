@@ -19,6 +19,7 @@ import { updateBlog } from "./routers/update-blog";
 import { syncChaos } from "./routers/sync-chaos";
 import { syncOutline } from "./routers/sync-outline";
 import { syncBlog } from "./routers/sync-blog";
+import { S3Client } from "@aws-sdk/client-s3";
 
 
 dotenv.config();
@@ -36,6 +37,15 @@ export const deepseekAi = new OpenAI({
 export const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+export const r2Client = new S3Client({
+  region: "auto",
+  endpoint: `https://994e5e1edeb19651e7bc091ce176fd9a.r2.cloudflarestorage.com`,
+  credentials: {
+   accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+   secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!
+  },
+})
 
 
 
@@ -75,9 +85,6 @@ app.use(
     }): Promise<BaseContext & Partial<AuthContext>> => {
       try {
         const token = req.cookies.authToken;
-
-        console.log('Request Path:', req.path);
-        console.log('Request Cookies:', req.cookies);
 
         const baseContextWithRes = {
           userId: undefined,

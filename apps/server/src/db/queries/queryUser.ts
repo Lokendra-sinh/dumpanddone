@@ -2,11 +2,12 @@ import { eq } from "drizzle-orm";
 import { db } from "..";
 import { users } from "../schema";
 import { TRPCError } from "@trpc/server";
+import { serializeDate } from "../../utils/date-helpers";
 
 export async function getUser(userId: string) {
   try {
     const userData = await db.select().from(users).where(eq(users.id, userId));
-    return userData[0];
+    return {...userData[0], created_at: serializeDate(userData[0].created_at)}
   } catch (e) {
     console.error("Error while retrieving the user from database", e);
     throw new TRPCError({
@@ -22,7 +23,10 @@ export async function getUserByEmail(emailId: string) {
       .select()
       .from(users)
       .where(eq(users.email, emailId));
-    return userData[0];
+    return {
+      ...userData[0],
+      created_at: serializeDate(userData[0].created_at)
+    }
   } catch (e) {
     console.error("Error while retrieving the user from database", e);
     throw new TRPCError({

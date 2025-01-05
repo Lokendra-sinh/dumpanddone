@@ -4,7 +4,7 @@ import { create } from "zustand"
 export interface BlogType {
     id: string,
     content: TiptapDocument,
-    chaos: string,
+    chaos_url: string,
     outline: BlogOutlineType,
     created_at: string,
     last_updated: string,

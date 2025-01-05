@@ -32,61 +32,32 @@ const COOKIE_CONFIG = {
 export const googleLogin = authProcedure
   .input(LoginSchema)
   .output(LoginResponseSchema)
-  .mutation(async ({ input, ctx }) => {
-    console.log('==== Starting Google Login ====');
+  .mutation(async ({ input, ctx }): Promise<LoginResponseSchemaType> => {
     try {
       const { accessToken } = input;
-      console.log('Access Token Received:', accessToken.substring(0, 10) + '...');
 
-      // Verify Google Token
-      console.log('Verifying Google Token...');
       const userData = await verifyGoogleToken(accessToken);
-      console.log('Google User Data:', {
-        email: userData.email,
-        name: userData.name,
-        // Don't log full picture URL for privacy
-        hasPicture: !!userData.picture
-      });
 
-      // Get or Create User
-      let user;
-      try {
-        console.log('Fetching existing user...');
-        user = await getUserByEmail(userData.email);
-        console.log('Existing user found:', {
-          id: user?.id,
-          email: user?.email,
-          auth_method: user?.auth_method
-        });
-      } catch (e) {
-        console.log('Creating new user...');
-        console.error('User fetch error:', {
-          error: e,
-          stack: e instanceof Error ? e.stack : undefined
-        });
-        
+      let user = await getUserByEmail(userData.email);
+
+
+      if (!user || !user.id) {
         user = await addUser({
           name: userData.name,
           email: userData.email,
           avatar: userData.picture,
           auth_method: "google",
         });
-        console.log('New user created:', {
-          id: user.id,
-          email: user.email
+      }
+
+      if (!user || !user.id) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to get or create user'
         });
       }
 
-      // Get User Blogs
-      console.log('Fetching user blogs...');
       const userBlogs = await getBlogsByUserId(user.id);
-      console.log('User blogs fetched:', {
-        count: userBlogs.length,
-        blogIds: userBlogs.map(b => b.id)
-      });
-
-      // Prepare Response
-      console.log('Preparing response...');
       const response = {
         status: "success",
         user: {
@@ -100,8 +71,6 @@ export const googleLogin = authProcedure
         },
       };
 
-      // Validate Response Against Schema
-      console.log('Validating response against schema...');
       try {
         const validationResult = LoginResponseSchema.safeParse(response);
         if (!validationResult.success) {
@@ -116,10 +85,7 @@ export const googleLogin = authProcedure
             cause: validationResult.error
           });
         }
-        console.log('Validation successful!');
         
-        // Generate Token and Set Cookie
-        console.log('Generating session token...');
         const sessionToken = generateJwtToken(user.id);
         ctx.res.cookie("authToken", sessionToken, COOKIE_CONFIG);
         

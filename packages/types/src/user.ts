@@ -5,8 +5,8 @@ export const UserSchema = z.object({
     id: z.string(),
     name: z.string(),
     email: z.string(),
-    avatar: z.string(),
-    created_at: z.date(),
+    avatar: z.string().optional(),
+    created_at: z.string(),
     auth_method: z.union([
       z.literal("google"),
       z.literal("github"),
@@ -15,9 +15,9 @@ export const UserSchema = z.object({
     blogs: z.array(z.object({
       id: z.string(),
       content: TiptapDocumentSchema,
-      chaos: z.string(),
-      created_at: z.date(),
-      last_updated: z.date(),
+      chaos_url: z.string(),
+      created_at: z.string(),
+      last_updated: z.string(),
       outline: BlogOutlineSchema,
     }))
   });

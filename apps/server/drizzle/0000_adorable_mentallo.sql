@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS "blogs" (
 	"user_id" uuid NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"last_updated" timestamp with time zone DEFAULT now() NOT NULL,
-	"chaos" text NOT NULL,
+	"chaos_path" text NOT NULL,
 	"outline" jsonb NOT NULL,
 	"blog" jsonb NOT NULL
 );

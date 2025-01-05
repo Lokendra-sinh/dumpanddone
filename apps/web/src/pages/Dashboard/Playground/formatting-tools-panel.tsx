@@ -50,11 +50,11 @@ export function FormattingToolsPanel({ handleToolsPanelClick }: FormattingToolsP
 
   return (
     <TooltipProvider>
-      <div className="flex items-center space-x-1 rounded-md bg-background p-1 shadow-sm">
+      <div className="flex items-center space-x-1 rounded-md bg-muted/100 p-1 shadow-sm">
         <div className="flex flex-wrap items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('bold')} className="h-7 w-7 p-0 hover:bg-muted">
+              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('bold')} className="h-7 w-7 p-0 hover:bg-white">
                 <Bold className="h-3 w-3 text-foreground" />
               </Button>
             </TooltipTrigger>
@@ -64,7 +64,7 @@ export function FormattingToolsPanel({ handleToolsPanelClick }: FormattingToolsP
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('italic')} className="h-7 w-7 p-0 hover:bg-muted">
+              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('italic')} className="h-7 w-7 p-0 hover:bg-white">
                 <Italic className="h-3 w-3 text-foreground" />
               </Button>
             </TooltipTrigger>
@@ -74,7 +74,7 @@ export function FormattingToolsPanel({ handleToolsPanelClick }: FormattingToolsP
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('underline')} className="h-7 w-7 p-0 hover:bg-muted">
+              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('underline')} className="h-7 w-7 p-0 hover:bg-white">
                 <Underline className="h-3 w-3 text-foreground" />
               </Button>
             </TooltipTrigger>
@@ -84,7 +84,7 @@ export function FormattingToolsPanel({ handleToolsPanelClick }: FormattingToolsP
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('strikethrough')} className="h-7 w-7 p-0 hover:bg-muted">
+              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('strikethrough')} className="h-7 w-7 p-0 hover:bg-white">
                 <Strikethrough className="h-3 w-3 text-foreground" />
               </Button>
             </TooltipTrigger>
@@ -95,7 +95,7 @@ export function FormattingToolsPanel({ handleToolsPanelClick }: FormattingToolsP
           <Separator orientation="vertical" className="mx-1 h-6" />
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('align-left')} className="h-7 w-7 p-0 hover:bg-muted">
+              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('align-left')} className="h-7 w-7 p-0 hover:bg-white">
                 <AlignLeft className="h-3 w-3 text-foreground" />
               </Button>
             </TooltipTrigger>
@@ -105,7 +105,7 @@ export function FormattingToolsPanel({ handleToolsPanelClick }: FormattingToolsP
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('align-center')} className="h-7 w-7 p-0 hover:bg-muted">
+              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('align-center')} className="h-7 w-7 p-0 hover:bg-white">
                 <AlignCenter className="h-3 w-3 text-foreground" />
               </Button>
             </TooltipTrigger>
@@ -115,7 +115,7 @@ export function FormattingToolsPanel({ handleToolsPanelClick }: FormattingToolsP
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('align-right')} className="h-7 w-7 p-0 hover:bg-muted">
+              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('align-right')} className="h-7 w-7 p-0 hover:bg-white">
                 <AlignRight className="h-3 w-3 text-foreground" />
               </Button>
             </TooltipTrigger>
@@ -125,7 +125,7 @@ export function FormattingToolsPanel({ handleToolsPanelClick }: FormattingToolsP
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('align-justify')} className="h-7 w-7 p-0 hover:bg-muted">
+              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('align-justify')} className="h-7 w-7 p-0 hover:bg-white">
                 <AlignJustify className="h-3 w-3 text-foreground" />
               </Button>
             </TooltipTrigger>
@@ -136,7 +136,7 @@ export function FormattingToolsPanel({ handleToolsPanelClick }: FormattingToolsP
           <Separator orientation="vertical" className="mx-1 h-6" />
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('bullet-list')} className="h-7 w-7 p-0 hover:bg-muted">
+              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('bullet-list')} className="h-7 w-7 p-0 hover:bg-white">
                 <List className="h-3 w-3 text-foreground" />
               </Button>
             </TooltipTrigger>
@@ -146,7 +146,7 @@ export function FormattingToolsPanel({ handleToolsPanelClick }: FormattingToolsP
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('numbered-list')} className="h-7 w-7 p-0 hover:bg-muted">
+              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('numbered-list')} className="h-7 w-7 p-0 hover:bg-white">
                 <ListOrdered className="h-3 w-3 text-foreground" />
               </Button>
             </TooltipTrigger>
@@ -157,7 +157,7 @@ export function FormattingToolsPanel({ handleToolsPanelClick }: FormattingToolsP
           <Separator orientation="vertical" className="mx-1 h-6" />
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('heading-1')} className="h-7 w-7 p-0 hover:bg-muted">
+              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('heading-1')} className="h-7 w-7 p-0 hover:bg-white">
                 <Heading1 className="h-3 w-3 text-foreground" />
               </Button>
             </TooltipTrigger>
@@ -167,7 +167,7 @@ export function FormattingToolsPanel({ handleToolsPanelClick }: FormattingToolsP
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('heading-2')} className="h-7 w-7 p-0 hover:bg-muted">
+              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('heading-2')} className="h-7 w-7 p-0 hover:bg-white">
                 <Heading2 className="h-3 w-3 text-foreground" />
               </Button>
             </TooltipTrigger>
@@ -177,7 +177,7 @@ export function FormattingToolsPanel({ handleToolsPanelClick }: FormattingToolsP
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('heading-3')} className="h-7 w-7 p-0 hover:bg-muted">
+              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('heading-3')} className="h-7 w-7 p-0 hover:bg-white">
                 <Heading3 className="h-3 w-3 text-foreground" />
               </Button>
             </TooltipTrigger>
@@ -188,7 +188,7 @@ export function FormattingToolsPanel({ handleToolsPanelClick }: FormattingToolsP
           <Separator orientation="vertical" className="mx-1 h-6" />
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('link')} className="h-7 w-7 p-0 hover:bg-muted">
+              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('link')} className="h-7 w-7 p-0 hover:bg-white">
                 <Link className="h-3 w-3 text-foreground" />
               </Button>
             </TooltipTrigger>
@@ -200,7 +200,7 @@ export function FormattingToolsPanel({ handleToolsPanelClick }: FormattingToolsP
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-muted">
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-white">
                     <Image className="h-3 w-3 text-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -229,7 +229,7 @@ export function FormattingToolsPanel({ handleToolsPanelClick }: FormattingToolsP
           />
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('code')} className="h-7 w-7 p-0 hover:bg-muted">
+              <Button variant="ghost" size="sm" onClick={() => handleToolsPanelClick('code')} className="h-7 w-7 p-0 hover:bg-white">
                 <Code className="h-3 w-3 text-foreground" />
               </Button>
             </TooltipTrigger>

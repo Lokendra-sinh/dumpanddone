@@ -5,6 +5,8 @@ import { db } from "../db";
 import { blogs } from "../db/schema";
 import { and, eq } from "drizzle-orm";
 import { PostgresError } from "postgres";
+import { uploadChaosToR2 } from "../r2/store";
+import { serializeDate } from "../utils/date-helpers";
 
 const SyncChaosInputSchema = z.object({
   chaos: z.string().min(1),
@@ -17,6 +19,8 @@ const SyncChaosInputSchema = z.object({
 async function findOrCreateBlog(userId: string, blogId: string, chaos: string) {
     try {
       // First try to get existing blog
+      const chaosPath = await uploadChaosToR2({blogId: blogId, userId: userId, chaos: chaos})
+
       const existingBlog = await db
         .select()
         .from(blogs)
@@ -35,13 +39,11 @@ async function findOrCreateBlog(userId: string, blogId: string, chaos: string) {
           .values({
             id: blogId,
             user_id: userId,
-            chaos,
-            created_at: new Date(),
-            last_updated: new Date(),
+            chaos_path: chaosPath,
             outline: {
                 sections: [],
-                created_at: new Date(),
-                updated_at: new Date()
+                created_at: serializeDate(new Date()),
+                updated_at: serializeDate(new Date())
               },
               blog: {
                 type: 'doc',
@@ -57,7 +59,7 @@ async function findOrCreateBlog(userId: string, blogId: string, chaos: string) {
       const updatedBlog = await db
         .update(blogs)
         .set({
-          chaos,
+          chaos_path: chaosPath,
           last_updated: new Date()
         })
         .where(

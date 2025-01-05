@@ -44,6 +44,7 @@ import { ModeToggle } from "@/components/toggle-mode";
 import { FormattingToolsPanel } from "./formatting-tools-panel";
 import { commandsMap } from "@/utils/commandsMap";
 import { useCustomEditor } from "@/providers/playground-provider";
+import { useQuery } from "@tanstack/react-query";
 
 type TabsType = "upload" | "outline" | "playground";
 
@@ -52,10 +53,25 @@ export const PlaygroundTabs = () => {
   const { blogId } = useParams({ from: BlogEditorRoute.id });
   const user = useUserStore((state) => state.user);
   const currentActiveBlogData = user?.blogs.find(blog => blog.id === blogId)
+  const chaosQuery = useQuery({
+    queryKey: ['chaos', currentActiveBlogData?.chaos_url],
+    queryFn: async () => {
+      if (!currentActiveBlogData?.chaos_url) {
+        return "";
+      }
+      const response = await fetch(currentActiveBlogData.chaos_url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch chaos content');
+      }
+      return response.text();
+    },
+    enabled: !!currentActiveBlogData?.chaos_url, // Only run when URL exists
+  });
+
   const { editor } = useCustomEditor();
   const { selectedTab } = useSearch({ from: BlogEditorRoute.id });
   const setModelInZustand = useUserStore((state) => state.setSelectedModel);
-  const [content, setContent] = useState<string>(currentActiveBlogData?.chaos || "");
+  const [content, setContent] = useState<string>("");
   const [activeTab, setActiveTab] = useState<TabsType>(selectedTab || "upload");
   const [sections, setSections] = useState<OutlineSectionType[]>(currentActiveBlogData?.outline.sections || []);
   const [isScanning, setIsScanning] = useState(false);
@@ -286,6 +302,12 @@ export const PlaygroundTabs = () => {
   }, [user]);
 
   useEffect(() => {
+    if(chaosQuery!.data){
+      setContent(chaosQuery.data)
+    }
+  },[chaosQuery])
+
+  useEffect(() => {
     outlineParser.subscribe((section) => {
       if (section.title === "OUTLINE_END") {
         setIsScanning(false);
@@ -340,142 +362,151 @@ export const PlaygroundTabs = () => {
       </header>
 
       <div className="flex-1 p-3 overflow-hidden">
-        <Tabs
-          className="h-full flex flex-col"
-          value={activeTab}
-          onValueChange={(value) => setActiveTab(value as TabsType)}
+      <Tabs
+  className="h-full flex flex-col"
+  value={activeTab}
+  onValueChange={(value) => setActiveTab(value as TabsType)}
+>
+  <div className="flex items-center justify-between mb-2">
+    <TabsList>
+      <TabsTrigger value="upload" className="group">
+        <Upload className="h-4 w-4" />
+        <span className={`transition-all active:bg-card-foreground duration-300 ease-in-out ${
+          activeTab === 'playground' 
+            ? 'max-w-0 overflow-hidden group-hover:max-w-xs group-hover:ml-2' 
+            : 'ml-2'
+        }`}>
+          Upload
+        </span>
+      </TabsTrigger>
+      
+      <TabsTrigger value="outline" className="group">
+        <Upload className="h-4 w-4" />
+        <span className={`transition-all duration-300 ease-in-out ${
+          activeTab === 'playground' 
+            ? 'max-w-0 overflow-hidden group-hover:max-w-xs group-hover:ml-2' 
+            : 'ml-2'
+        }`}>
+          Outline
+        </span>
+      </TabsTrigger>
+      
+      <TabsTrigger value="playground" className="flex items-center gap-2">
+        <Palette className="h-4 w-4" />
+        <span>Playground</span>
+      </TabsTrigger>
+    </TabsList>
+    
+    <FormattingToolsPanel handleToolsPanelClick={handleToolsPanelClick} />
+  </div>
+
+  <TabsContent value="upload">
+    <Card className="w-full flex-1">
+      <CardHeader>
+        <CardTitle>Upload Content</CardTitle>
+        <CardDescription>
+          Paste or type your unformatted content here
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="">
+        <div className="flex items-center justify-between mb-4">
+          <Select
+            value={selectedModel}
+            onValueChange={(value: ModelsType) => {
+              setSelectedModel(value);
+              setModelInZustand(value);
+            }}
+          >
+            <SelectTrigger className="w-[180px] rounded-[10px]">
+              <SelectValue placeholder="Select the model" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="claude">Claude</SelectItem>
+              <SelectItem value="deepseek">Deepseek</SelectItem>
+              <SelectItem value="gpt">Gpt</SelectItem>
+            </SelectContent>
+          </Select>
+          {sections.length > 0 && (
+            <div className="flex items-center gap-2">
+              <InfoIcon size={14} className="text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                Switch to outline tab to view blog outline
+              </span>
+            </div>
+          )}
+        </div>
+        <ScanningTextArea
+          value={content}
+          onChange={handleContentChange}
+          isScanning={isScanning}
+        />
+        <Button
+          className="w-fit mt-4 shrink-0 bg-accent hover:opacity-90 transition-opacity"
+          onClick={generateBlogOutline}
+          disabled={isScanning || !content.length}
         >
-          <div className="flex items-center justify-between mb-2">
-            <TabsList>
-              <TabsTrigger value="upload" className="group">
-                <Upload className="h-4 w-4" />
-                <span className="max-w-0 overflow-hidden group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 ease-in-out">
-                  Upload
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="outline" className="group">
-                <Upload className="h-4 w-4" />
-                <span className="max-w-0 overflow-hidden group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 ease-in-out">
-                  Outline
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="playground" className="group">
-                <Palette className="h-4 w-4" />
-                <span className="max-w-0 overflow-hidden group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 ease-in-out">
-                  Playground
-                </span>
-              </TabsTrigger>
-            </TabsList>
-            <FormattingToolsPanel handleToolsPanelClick={handleToolsPanelClick} />
-          </div>
+          {isScanning ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            "Generate Blog Outline"
+          )}
+        </Button>
+      </CardContent>
+    </Card>
+  </TabsContent>
 
-          <TabsContent value="upload">
-            <Card className="w-full flex-1">
-              <CardHeader>
-                <CardTitle>Upload Content</CardTitle>
-                <CardDescription>
-                  Paste or type your unformatted content here
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="">
-                <div className="flex items-center justify-between mb-4">
-                  <Select
-                    value={selectedModel}
-                    onValueChange={(value: ModelsType) => {
-                      setSelectedModel(value);
-                      setModelInZustand(value);
-                    }}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select the model" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="claude">Claude</SelectItem>
-                      <SelectItem value="deepseek">Deepseek</SelectItem>
-                      <SelectItem value="gpt">Gpt</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {sections.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <InfoIcon size={14} className="text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">
-                        Switch to outline tab to view blog outline
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <ScanningTextArea
-                  value={content}
-                  onChange={handleContentChange}
-                  isScanning={isScanning}
-                />
-                <Button
-                  className="w-fit mt-4 shrink-0 bg-gradient-to-b from-[#1a1a1c] to-[#3d3e43] hover:opacity-90 transition-opacity"
-                  onClick={generateBlogOutline}
-                  disabled={isScanning || !content.length}
-                >
-                  {isScanning ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    "Generate Blog Outline"
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
+  <TabsContent
+    value="outline"
+    className="h-[calc(100vh-160px)] flex flex-col gap-4"
+  >
+    <Card
+      className={`flex-1 flex flex-col overflow-hidden ${isScanning && "animate-border-pulse"}`}
+    >
+      <CardHeader className="shrink-0">
+        <CardTitle>Blog Outline</CardTitle>
+        <CardDescription>
+          Sections generated from your content
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex-1 overflow-hidden">
+        <Outline
+          sections={sections}
+          onDelete={handleDelete}
+          onUpdate={handleUpdate}
+          onInsert={handleInsert}
+        />
+      </CardContent>
+    </Card>
+    <Button
+      className="w-fit shrink-0 bg-gradient-to-b from-[#1a1a1c] to-[#3d3e43] hover:opacity-90 transition-opacity"
+      onClick={() => generateBlog()}
+      disabled={isScanning || !sections.length}
+    >
+      {isScanning ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Generating...
+        </>
+      ) : (
+        "Generate Blog"
+      )}
+    </Button>
+  </TabsContent>
 
-          <TabsContent
-            value="outline"
-            className="h-[calc(100vh-160px)] flex flex-col gap-4"
-          >
-            <Card
-              className={`flex-1 flex flex-col overflow-hidden ${isScanning && "animate-border-pulse"}`}
-            >
-              <CardHeader className="shrink-0">
-                <CardTitle>Blog Outline</CardTitle>
-                <CardDescription>
-                  Sections generated from your content
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 overflow-hidden">
-                <Outline
-                  sections={sections}
-                  onDelete={handleDelete}
-                  onUpdate={handleUpdate}
-                  onInsert={handleInsert}
-                />
-              </CardContent>
-            </Card>
-            <Button
-              className="w-fit shrink-0 bg-gradient-to-b from-[#1a1a1c] to-[#3d3e43] hover:opacity-90 transition-opacity"
-              onClick={() => generateBlog()}
-              disabled={isScanning || !sections.length}
-            >
-              {isScanning ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                "Generate Blog"
-              )}
-            </Button>
-          </TabsContent>
-
-          <TabsContent
-            className="h-[calc(100vh-140px)] flex flex-col"
-            value="playground"
-          >
-            <Card className="border-none shadow-none flex-1 flex items-center justify-center bg-background">
-              <div className="w-full h-full max-w-4xl">
-                <PrimaryEditor />
-              </div>
-            </Card>
-          </TabsContent>
-        </Tabs>
+  <TabsContent
+    className="h-[calc(100vh-140px)] flex flex-col"
+    value="playground"
+  >
+    <Card className="border-none shadow-none flex-1 flex items-center justify-center bg-background">
+      <div className="w-full h-full max-w-4xl">
+        <PrimaryEditor />
+      </div>
+    </Card>
+  </TabsContent>
+</Tabs>
       </div>
 
       <Dialog open={showStreamDialog} onOpenChange={setShowStreamDialog}>

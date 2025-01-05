@@ -76,14 +76,12 @@ export async function generateBlogContent(
         rawContent = await generateWithDeepseek(chaos, outline);
         break;
       case "gpt":
-        console.log("GPT will generate the blog now");
         rawContent = await generateWithGPT(chaos, outline);
         break;
       default:
         throw new Error(`Unsupported model: ${model}`);
     }
 
-    console.log("RAW CONTENT is", rawContent);
 
     // Clean and validate JSON structure
     const cleanedJson = cleanAndValidateJson(rawContent);

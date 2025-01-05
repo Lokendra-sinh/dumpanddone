@@ -11,6 +11,9 @@ export default {
   darkMode: ["class"],
   theme: {
     extend: {
+      boxShadow: {
+        'inner-top': 'inset 0 1px 0 0 rgba(255,255,255,0.1)',
+      },
       height: {
         "screen-minus-16": "calc(100vh - 64px)",
         "screen-minus-32": "calc(100vh - 150px)",
@@ -18,6 +21,26 @@ export default {
         "screen-minus-48": "calc(100vh - 260px)",
       },
       keyframes: {
+        particle: {
+          '0%': {
+            opacity: '1',
+            transform: 'translate(-50%, -50%) translate(0, 0)'
+          },
+          '100%': {
+            opacity: '0',
+            transform: 'translate(-50%, -50%) translate(var(--tx), var(--ty))'
+          }
+        },
+        'custom-fade-in': {
+          from: {
+            opacity: '0',
+            transform: 'translateY(10px)'
+          },
+          to: {
+            opacity: '1',
+            transform: 'translateY(0)'
+          }
+        },
         "gradient-y": {
           "0%, 100%": {
             "background-size": "100% 400%",
@@ -26,28 +49,6 @@ export default {
           "50%": {
             "background-size": "100% 400%",
             "background-position": "0% 100%",
-          },
-        },
-        "scan-line": {
-          "0%": {
-            transform: "translateY(0)",
-          },
-          "50%": {
-            transform: "translateY(396px)", // match container height
-          },
-          "100%": {
-            transform: "translateY(0)",
-          },
-        },
-        "shadow-pulse": {
-          "0%": {
-            boxShadow: "0 0 5px 5px rgba(168, 85, 247, 0.5)",
-          },
-          "50%": {
-            boxShadow: "0 0 40px 10px rgba(168, 85, 247, 0.7)",
-          },
-          "100%": {
-            boxShadow: "0 0 80px 15px rgba(168, 85, 247, 0.5)",
           },
         },
         "border-pulse": {
@@ -63,75 +64,73 @@ export default {
             borderColor: "hsl(var(--border) / 0.1)",
             boxShadow: "0 0 0 0 hsl(var(--border) / 0.1)",
           },
-        },
-        "dashboard-glow": {
-          "0%": {
-            transform: "scale(1)",
-          },
-          "50%": {
-            transform: "scale(1.01)",
-          },
-          "100%": {
-            transform: "scale(1.5)",
-          },
-        },
+        }
       },
       animation: {
-        "dashboard-glow": "dashboard-glow 6s ease-in-out",
-        "shadow-pulse": "shadow-pulse 6s ease-in-out",
-        "animate-scan": "scan 2s ease-in-out infinite",
-        "scan-line": "scan-line 2s ease-in-out infinite",
+        'particle': 'particle var(--duration) ease-out var(--delay)',
+        'custom-fade-in': 'custom-fade-in 1s ease-out forwards',
         "gradient-y": "gradient-y 2s ease-in-out infinite",
         "border-pulse": "border-pulse 2s ease-in-out infinite",
       },
       colors: {
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        background: "hsl(var(--background))", // Pure white in light mode, Rich dark gray (#020817) in dark
+        foreground: "hsl(var(--foreground))", // Dark gray in light mode, Light gray in dark
+        
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: "hsl(var(--card))", // Slightly off-white in light, Very dark blue in dark
+          foreground: "hsl(var(--card-foreground))", // Dark gray text for cards
         },
+        
         popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+          DEFAULT: "hsl(var(--popover))", // White in light, Dark gray-blue in dark
+          foreground: "hsl(var(--popover-foreground))", // Text color for popovers
         },
+        
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: "hsl(var(--primary))", // Vibrant blue (#2563eb)
+          foreground: "hsl(var(--primary-foreground))", // White text for primary elements
         },
+        
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: "hsl(var(--secondary))", // Light gray in light, Dark gray in dark
+          foreground: "hsl(var(--secondary-foreground))", // Contrast text for secondary
         },
+        
         muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          DEFAULT: "hsl(var(--muted))", // Very light gray, Nearly black in dark
+          foreground: "hsl(var(--muted-foreground))", // Subtle text color
         },
+        
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: "hsl(var(--accent))", // Light blue-gray in light, Dark blue-gray in dark
+          foreground: "hsl(var(--accent-foreground))", // Text on accent colors
         },
+        
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+          DEFAULT: "hsl(var(--destructive))", // Error red (#ef4444)
+          foreground: "hsl(var(--destructive-foreground))", // White text on error
         },
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
+        
+        border: "hsl(var(--border))", // Light gray border in light, Dark gray in dark
+        input: "hsl(var(--input))", // Input field border color
+        ring: "hsl(var(--ring))", // Focus ring color (usually blue)
+        
         chart: {
-          1: "hsl(var(--chart-1))",
-          2: "hsl(var(--chart-2))",
-          3: "hsl(var(--chart-3))",
-          4: "hsl(var(--chart-4))",
-          5: "hsl(var(--chart-5))",
+          1: "hsl(var(--chart-1))", // First chart color (usually blue)
+          2: "hsl(var(--chart-2))", // Second chart color (usually green)
+          3: "hsl(var(--chart-3))", // Third chart color (usually yellow)
+          4: "hsl(var(--chart-4))", // Fourth chart color (usually red)
+          5: "hsl(var(--chart-5))", // Fifth chart color (usually purple)
         },
+        
         brand: {
-          DEFAULT: "hsl(var(--brand))",
-          foreground: "hsl(var(--brand-foreground))",
+          DEFAULT: "hsl(var(--brand))", // Primary brand color
+          foreground: "hsl(var(--brand-foreground))", // Text on brand color
         },
+        
         highlight: {
-          DEFAULT: "hsl(var(--highlight))",
-          foreground: "hsl(var(--highlight-foreground))",
+          DEFAULT: "hsl(var(--highlight))", // Highlight background (usually soft yellow)
+          foreground: "hsl(var(--highlight-foreground))", // Text on highlights
         },
       },
       borderRadius: {

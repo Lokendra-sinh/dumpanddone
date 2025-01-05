@@ -6,7 +6,7 @@ export function Navbar() {
     <header className="w-full sticky top-0 z-50 border-b px-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="w-full px-12 flex h-16 items-center justify-between gap-10">
         <div className="flex items-center justify-between gap-10">
-          <Link href="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <div className="w-7 h-7 bg-blue-600 rounded-sm">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
                 <defs>
@@ -90,13 +90,13 @@ export function Navbar() {
           </Link>
           <nav className="hidden gap-6 md:flex">
             <Link
-              href="/pricing"
+              to="/dashboard"
               className="text-accent font-medium transition-colors hover:text-foreground"
             >
               Dashboard
             </Link>
             <Link
-              href="/pricing"
+              to="/dashboard"
               className="text-accent font-medium transition-colors hover:text-foreground"
             >
               Pricing

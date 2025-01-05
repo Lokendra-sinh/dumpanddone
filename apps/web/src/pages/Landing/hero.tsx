@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router"
+
 import { Button } from "@dumpanddone/ui"
 import { ArrowDown } from 'lucide-react'
 import { useState } from 'react'
@@ -11,13 +11,12 @@ export function Hero() {
     <section className="relative overflow-hidden pt-24 md:pt-32">
       <div className="container relative z-10 mx-auto px-4">
         <div className="text-center">
-          <Link
-            href="/demo"
+          <p
             className="inline-flex items-center rounded-full bg-muted px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
           >
             Launching soon...
             <ArrowDown className="ml-2 h-4 w-4" />
-          </Link>
+          </p>
           <h1 className="mt-8 text-4xl font-medium font-inter tracking-tight sm:text-6xl md:text-7xl">
             Turn your scattered thoughts
             <br />

@@ -73,7 +73,7 @@ export const PlaygroundTabs = () => {
   const setModelInZustand = useUserStore((state) => state.setSelectedModel);
   const [content, setContent] = useState<string>("");
   const [activeTab, setActiveTab] = useState<TabsType>(selectedTab || "upload");
-  const [sections, setSections] = useState<OutlineSectionType[]>(currentActiveBlogData?.outline.sections || []);
+  const [sections, setSections] = useState<OutlineSectionType[]>(currentActiveBlogData?.outline!.sections || []);
   const [isScanning, setIsScanning] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelsType>("claude");
   const [showStreamDialog, setShowStreamDialog] = useState(false);

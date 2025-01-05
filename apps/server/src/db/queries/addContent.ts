@@ -5,8 +5,8 @@ import { type BlogOutlineType, type TiptapDocument } from '@dumpanddone/types';
 
 const emptyOutline: BlogOutlineType = {
     sections: [],
-    created_at: new Date(),
-    updated_at: new Date()
+    created_at: new Date().toISOString(), // Convert to ISO string format
+    updated_at: new Date().toISOString()  // Convert to ISO string format
 };
 
 const emptyBlog: TiptapDocument = {
@@ -27,7 +27,7 @@ export async function addChaos(props: AddChaosProps) {
         return await db.insert(blogs).values({
             id: blogId,
             user_id: userId,
-            chaos: chaos,
+            chaos_path: chaos,
             outline: emptyOutline,
             blog: emptyBlog,
         });

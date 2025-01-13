@@ -10,8 +10,20 @@ export function Login() {
 
   const googleLoginMutation = trpc.googleLogin.useMutation({
     onSuccess: (res) => {
-      console.log("RES is", res);
-      setUser({...res.user});
+      setUser({
+        ...res.user,
+        created_at: new Date(res.user.created_at),
+        blogs: res.user.blogs.map(blog => ({
+          ...blog,
+          created_at: new Date(blog.created_at),
+          last_updated: new Date(blog.last_updated),
+          outline: blog.outline ? {
+            ...blog.outline,
+            created_at: new Date(blog.outline.created_at),
+            updated_at: new Date(blog.outline.updated_at)
+          } : undefined
+        }))
+      });
       navigate({
         to: "/dashboard",
       });

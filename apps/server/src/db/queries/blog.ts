@@ -63,8 +63,8 @@ export async function getBlogsByUserId(userId: string) {
                     created_at: blog.outline.created_at,
                     updated_at: blog.outline.updated_at
                 },
-                created_at: serializeDate( blog.created_at),
-                last_updated: serializeDate( blog.last_updated) 
+                created_at: blog.created_at,
+                last_updated: blog.last_updated 
             };
         }));
         

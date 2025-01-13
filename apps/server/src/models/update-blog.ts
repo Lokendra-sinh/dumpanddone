@@ -3,8 +3,7 @@ import { anthropic, deepseekAi, openai } from "..";
 import { TRPCError } from "@trpc/server";
 import { blogContentUpdatePrompt } from "../prompts/update-blog-instructions";
 import { cleanAndValidateJson } from "../utils/clean-and-validate-json";
-import { validateTiptapStructure } from "../utils/validate-tiptap-structure";
-import { unknown } from "zod";
+
 
 interface UpdateBlogType {
     selectedContent: TipTapContentType;

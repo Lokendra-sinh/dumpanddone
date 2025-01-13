@@ -88,8 +88,8 @@ export const createOrUpdateBlog = protectedProcedure
         content: blogContent, 
         outline: {
           sections: outline, 
-          created_at: serializeDate(new Date()), 
-          updated_at: serializeDate(new Date())
+          created_at: new Date(), 
+          updated_at: new Date()
         }
       });
 

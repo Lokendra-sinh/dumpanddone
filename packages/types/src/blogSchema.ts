@@ -12,8 +12,8 @@ export const OutlineSectionSchema = z.object({
 
 export const BlogOutlineSchema = z.object({
     sections: z.array(OutlineSectionSchema),
-    created_at: z.string(),
-    updated_at: z.string()
+    created_at: z.date(),
+    updated_at: z.date()
 })
 
 // Mark Schema

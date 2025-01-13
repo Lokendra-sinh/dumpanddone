@@ -6,8 +6,8 @@ export interface BlogType {
     content: TiptapDocument,
     chaos_url?: string,
     outline?: BlogOutlineType,
-    created_at?: string,
-    last_updated?: string,
+    created_at: Date,
+    last_updated: Date,
 }
 
 

@@ -6,7 +6,7 @@ export const UserSchema = z.object({
     name: z.string(),
     email: z.string(),
     avatar: z.string().optional(),
-    created_at: z.string(),
+    created_at: z.date(),
     auth_method: z.union([
       z.literal("google"),
       z.literal("github"),
@@ -16,8 +16,8 @@ export const UserSchema = z.object({
       id: z.string(),
       content: TiptapDocumentSchema,
       chaos_url: z.string(),
-      created_at: z.string(),
-      last_updated: z.string(),
+      created_at: z.date(),
+      last_updated: z.date(),
       outline: BlogOutlineSchema,
     }))
   });

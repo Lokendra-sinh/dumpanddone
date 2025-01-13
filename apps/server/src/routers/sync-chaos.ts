@@ -42,8 +42,8 @@ async function findOrCreateBlog(userId: string, blogId: string, chaos: string) {
             chaos_path: chaosPath,
             outline: {
                 sections: [],
-                created_at: serializeDate(new Date()),
-                updated_at: serializeDate(new Date())
+                created_at:new Date(),
+                updated_at:new Date()
               },
               blog: {
                 type: 'doc',

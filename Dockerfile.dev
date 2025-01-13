@@ -1,0 +1,31 @@
+FROM node:21-alpine
+
+WORKDIR /app
+
+RUN npm install -g pnpm
+
+COPY . .
+
+RUN pnpm install
+
+# Create init script that uses drizzle-kit commands
+COPY <<EOF /docker-init.sh
+#!/bin/sh
+echo "🔍 Checking for database..."
+sleep 5
+
+echo "📦 Running database operations..."
+cd /app/apps/server
+# Generate migrations if they don't exist
+pnpm db:generate
+# Push changes to database
+pnpm db:push
+
+echo "🚀 Starting application..."
+cd /app
+exec pnpm dev
+EOF
+
+RUN chmod +x /docker-init.sh
+
+CMD ["/docker-init.sh"]

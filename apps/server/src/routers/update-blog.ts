@@ -25,7 +25,6 @@ export const updateBlog = protectedProcedure
     }
 
     const response = await updateBlogContent({blogContent, selectedContent, userQuery, model})
-    console.log("response for udpated blog is", response)
 
     return {
         status: "success",

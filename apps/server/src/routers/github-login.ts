@@ -21,7 +21,7 @@ const GithubUserResponseSchema = z.object({
   name: z.string().nullable(),
   email: z.string().nullable(),
   avatar_url: z.string(),
-  created_at: z.string(),
+  created_at: z.date(),
 });
 
 
@@ -50,8 +50,8 @@ async function exchangeGithubCode(code: string): Promise<string> {
           Accept: "application/json",
         },
         body: JSON.stringify({
-          client_id: process.env.GITHUB_CLIENT_ID,
-          client_secret: process.env.GITHUB_CLIENT_SECRET,
+          client_id: process.env.CLIENT_ID_GITHUB,
+          client_secret: process.env.CLIENT_SECRET_GITHUB,
           code,
         }),
       },
@@ -119,7 +119,7 @@ function normalizeGithubUser(
     name: githubUser.name || githubUser.login,
     email: githubUser.email,
     avatar: githubUser.avatar_url || undefined,
-    created_at: serializeDate( new Date()),
+    created_at: new Date(),
     auth_method: "github",
   };
 }

@@ -76,6 +76,8 @@ const Blogs = () => {
     setActiveBlog({
       id: blogId,
       content: { type: "doc", content: [] },
+      created_at: new Date(),
+      last_updated: new Date()
     })
     navigate({ 
       to: '/dashboard/editor/$blogId', 
@@ -85,7 +87,7 @@ const Blogs = () => {
 
   const handleOpenBlog = (blog: BlogType) => {
     const blogId = blog.id
-    setActiveBlog({id: blogId, content: blog.content})
+    setActiveBlog({id: blogId, content: blog.content, last_updated: blog.last_updated, created_at: blog.created_at})
     navigate({
       to: '/dashboard/editor/$blogId',
       params: {blogId},

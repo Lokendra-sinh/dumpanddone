@@ -1,0 +1,26 @@
+services:
+  server:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/packages/ui/node_modules
+      - /app/packages/types/node_modules
+      - /app/apps/web/node_modules
+      - /app/apps/server/node_modules
+    ports:
+      - '4000:4000'
+      - '5173:5173'
+    environment:
+      - DATABASE_URL=postgres://postgres:password@db:5432/mydb
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydb

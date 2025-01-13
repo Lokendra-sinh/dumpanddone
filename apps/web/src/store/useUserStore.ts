@@ -8,7 +8,7 @@ interface User {
   email: string;
   avatar?: string;
   auth_method: string;
-  created_at: string;
+  created_at: Date
   blogs: BlogType[]
 }
 

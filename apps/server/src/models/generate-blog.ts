@@ -2,9 +2,6 @@ import { anthropic, deepseekAi, openai } from "..";
 import { blogGeneratorPrompt } from "../prompts/generate-blog-instructions";
 import { ModelsType, OutlineSectionType } from "@dumpanddone/types";
 import { cleanAndValidateJson } from "../utils/clean-and-validate-json";
-import { validateTiptapStructure } from "../utils/validate-tiptap-structure";
-
-
 
 
 async function generateWithClaude(chaos: string, outline: OutlineSectionType[]) {

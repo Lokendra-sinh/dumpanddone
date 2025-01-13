@@ -1,0 +1,47 @@
+FROM node:18-alpine AS builder
+
+WORKDIR /apps
+
+COPY apps/server ./dumpanddone/apps/server/
+COPY packages/types ./dumpanddone/packages/types/
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+COPY package.json ./
+COPY turbo.json ./
+
+RUN npm install -g pnpm && pnpm clear-cache && pnpm install --prod && pnpm build
+
+FROM node:18-alpine
+
+WORKDIR /apps
+
+COPY --from=builder /apps/dumpanddone/apps/server/dist ./dumpanddone/
+COPY --from=builder /apps/dumpanddone/apps/server/drizzle ./dumpanddone/
+
+RUN npm install -g pnpm
+RUN pnpm install --prod
+
+COPY <<EOF /docker-init.sh
+#!bin/bash
+
+echo "🔍 Checking for database..."
+
+until nc -z db 5432; do
+    echo "Waiting for database"
+    sleep 2
+done
+
+echo "running database migrations"
+cd /apps/dumpanddone
+pnpm db:generate
+pnpm db:push
+
+echo "starting application"
+exec node dist/index.js
+EOF
+
+RUN chmod +x /docker-init.sh
+CMD ["/docker-init.sh"]
+
+
+

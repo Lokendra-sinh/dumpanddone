@@ -22,7 +22,20 @@ export function Register() {
 
   const googleSignupMutation = trpc.googleLogin.useMutation({
     onSuccess: (res) => {
-      setUser(res.user);
+      setUser({
+        ...res.user,
+        created_at: new Date(res.user.created_at),
+        blogs: res.user.blogs.map(blog => ({
+          ...blog,
+          created_at: new Date(blog.created_at),
+          last_updated: new Date(blog.last_updated),
+          outline: blog.outline ? {
+            ...blog.outline,
+            created_at: new Date(blog.outline.created_at),
+            updated_at: new Date(blog.outline.updated_at)
+          } : undefined
+        }))
+      });
       setIsLoading(false)
       navigate({
         to: "/dashboard",

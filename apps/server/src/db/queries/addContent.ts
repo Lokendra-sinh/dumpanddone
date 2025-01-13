@@ -5,8 +5,8 @@ import { type BlogOutlineType, type TiptapDocument } from '@dumpanddone/types';
 
 const emptyOutline: BlogOutlineType = {
     sections: [],
-    created_at: new Date().toISOString(), // Convert to ISO string format
-    updated_at: new Date().toISOString()  // Convert to ISO string format
+    created_at: new Date(),
+    updated_at: new Date()
 };
 
 const emptyBlog: TiptapDocument = {

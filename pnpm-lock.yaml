@@ -270,6 +270,10 @@ importers:
       zustand:
         specifier: ^5.0.1
         version: 5.0.1(@types/react@18.3.12)(react@18.3.1)(use-sync-external-store@1.2.2(react@18.3.1))
+    optionalDependencies:
+      '@rollup/rollup-linux-x64-musl':
+        specifier: 4.9.5
+        version: 4.9.5
     devDependencies:
       '@dumpanddone/server':
         specifier: workspace:^
@@ -2338,6 +2342,11 @@ packages:
 
   '@rollup/rollup-linux-x64-musl@4.27.3':
     resolution: {integrity: sha512-nBXOfJds8OzUT1qUreT/en3eyOXd2EH5b0wr2bVB5999qHdGKkzGzIyKYaKj02lXk6wpN71ltLIaQpu58YFBoQ==}
+    cpu: [x64]
+    os: [linux]
+
+  '@rollup/rollup-linux-x64-musl@4.9.5':
+    resolution: {integrity: sha512-ezyFUOwldYpj7AbkwyW9AJ203peub81CaAIVvckdkyH8EvhEIoKzaMFJj0G4qYJ5sw3BpqhFrsCc30t54HV8vg==}
     cpu: [x64]
     os: [linux]
 
@@ -7692,6 +7701,9 @@ snapshots:
     optional: true
 
   '@rollup/rollup-linux-x64-musl@4.27.3':
+    optional: true
+
+  '@rollup/rollup-linux-x64-musl@4.9.5':
     optional: true
 
   '@rollup/rollup-win32-arm64-msvc@4.27.3':

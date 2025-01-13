@@ -1,10 +1,11 @@
+import dotenv from "dotenv";
+dotenv.config();
 import express from "express";
 import cors from "cors";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { AuthContext, BaseContext, router } from "./trpc/initTRPC";
 import { createOrUpdateBlog } from "./routers/create-or-update-blog";
 import Anthropic from "@anthropic-ai/sdk";
-import dotenv from "dotenv";
 import { googleLogin } from "./routers/google-login";
 import { verifyJwtToken } from "./utils/verify-jwt-token";
 import { generateJwtToken } from "./utils/generate-jwt-token";
@@ -22,7 +23,7 @@ import { syncBlog } from "./routers/sync-blog";
 import { S3Client } from "@aws-sdk/client-s3";
 
 
-dotenv.config();
+const port = process.env.PORT || 4000;
 
 export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -140,8 +141,9 @@ app.use(
   })
 );
 
-httpServer.listen(4000, () => {
-  console.log("Server is listening on port 4000");
+
+httpServer.listen(port, () => {
+  console.log(`Server is listening on port ${port}`);
 });
 
 export type AppRouter = typeof appRouter;

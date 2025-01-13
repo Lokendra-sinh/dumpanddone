@@ -41,12 +41,12 @@ async function updateBlogOutline(userId: string, blogId: string, outline: BlogOu
     const existingCreatedDate = existingBlog[0].outline.created_at
 
     // Update outline
-    const updatedBlog = await db
+    await db
       .update(blogs)
       .set({
         outline: {
             ...outline,
-            updated_at: serializeDate(new Date()),
+            updated_at: new Date(),
             created_at: existingCreatedDate,
         },
         last_updated: new Date()

@@ -9,7 +9,7 @@
     "dev": "tsx --watch src/index.ts",
 "build": "echo 'Starting types build...' && tsc && echo 'files are' && ls -la dist/ && echo 'Types build complete'",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf ./dist turbo node_modules",
+    "clean": "rm -rf ./dist turbo node_modules tsbuild.**",
     "clear-cache": "pnpm run clean"
   },
   "keywords": [],

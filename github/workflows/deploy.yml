@@ -1,49 +1,76 @@
 name: deploy to development
+env:
+  ACTIONS_STEP_DEBUG: true  # Enable detailed GitHub Actions logging
+
 on:
   push:
     branches: [dev]
-    paths:
-      - 'apps/server/**'
-      - 'packages/types/**'
+    # Removed paths restriction so workflow runs on every push to dev
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps:  # Fixed indentation here
+    steps:
+      - name: Debug trigger
+        run: |
+          echo "🔍 Event that triggered workflow: ${{ github.event_name }}"
+          echo "📁 Branch name: ${{ github.ref }}"
+          echo "👤 Actor: ${{ github.actor }}"
+          echo "📝 Commit message: ${{ github.event.head_commit.message }}"
+
       - name: checkout the code
+        id: checkout
         uses: actions/checkout@v2
+        
+      - name: List repository contents
+        run: |
+          echo "📂 Repository contents:"
+          ls -la
+          echo "🌲 Directory structure:"
+          tree -L 3
 
       - name: login to github container registry
+        id: login
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ github.token }}  # Changed to newer syntax
+          password: ${{ github.token }}
 
       - name: Set up docker buildx
+        id: buildx
         uses: docker/setup-buildx-action@v2
 
       - name: Build and push docker image
+        id: docker_build
         uses: docker/build-push-action@v4
         with: 
           context: .
           file: Dockerfile.prod
           push: true
-          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}  # Added missing tags
+          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
 
       - name: setup ssh 
+        id: ssh_setup
         run: |
+          echo "🔑 Setting up SSH connection..."
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.HOSTINGER_IP }} >> ~/.ssh/known_hosts
+          echo "✅ SSH setup complete"
 
       - name: Deploy to remote server
+        id: deploy
         run: |
-          ssh root@${{ secrets.HOSTINGER_IP }} "
-            # Create required directories
+          echo "🚀 Starting deployment to remote server..."
+          ssh -v root@${{ secrets.HOSTINGER_IP }} "
+            set -x  # Print commands before execution
+            
+            echo '📁 Creating directories...'
             mkdir -p /root/apps/dumpanddone
-
-            # Create env file
+            
+            echo '🔑 Creating env file...'
             cat > /root/apps/dumpanddone/.env << EOL
             PORT=${{ secrets.PORT }}
             ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
@@ -62,8 +89,9 @@ jobs:
             POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
             POSTGRES_DB=${{ secrets.POSTGRES_DB }}
             EOL
-
-            # Create docker-compose file
+            echo '✅ Env file created'
+            
+            echo '📝 Creating docker-compose file...'
             cat > /root/apps/dumpanddone/docker-compose.prod.yaml << EOL
             services:
               server:
@@ -96,12 +124,35 @@ jobs:
             volumes:
               postgres_data:
             EOL
-
-            # Login to GitHub Container Registry
+            echo '✅ Docker-compose file created'
+            
+            echo '🔐 Logging into GitHub Container Registry...'
             docker login ghcr.io -u ${{ github.actor }} -p ${{ github.token }}
-
-            # Deploy using docker-compose
+            
+            echo '📦 Pulling latest images...'
             cd /root/apps/dumpanddone
             docker compose -f docker-compose.prod.yaml pull
+            
+            echo '🚀 Starting containers...'
             docker compose -f docker-compose.prod.yaml up -d
+            
+            echo '🔍 Checking container status...'
+            docker compose -f docker-compose.prod.yaml ps
+            
+            echo '📜 Showing container logs...'
+            docker compose -f docker-compose.prod.yaml logs --tail=100
+            
+            echo '✅ Deployment complete!'
+          "
+
+      - name: Verify deployment
+        if: always()  # Run even if previous step fails
+        run: |
+          echo "🔍 Verifying deployment..."
+          ssh root@${{ secrets.HOSTINGER_IP }} "
+            cd /root/apps/dumpanddone
+            echo '📊 Container status:'
+            docker compose -f docker-compose.prod.yaml ps
+            echo '📜 Recent logs:'
+            docker compose -f docker-compose.prod.yaml logs --tail=50
           "

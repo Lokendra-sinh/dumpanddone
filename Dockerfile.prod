@@ -2,46 +2,59 @@ FROM node:18-alpine AS builder
 
 WORKDIR /apps
 
+# Copy package files first for better caching
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY apps/server/package.json ./dumpanddone/apps/server/
+COPY packages/types/package.json ./dumpanddone/packages/types/
+
+# Install dependencies with cache
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    npm install -g pnpm && \
+    pnpm install --frozen-lockfile
+
+# Copy source files
 COPY apps/server ./dumpanddone/apps/server/
 COPY packages/types ./dumpanddone/packages/types/
-COPY pnpm-lock.yaml ./
-COPY pnpm-workspace.yaml ./
-COPY package.json ./
-COPY turbo.json ./
 
-RUN npm install -g pnpm && pnpm clear-cache && pnpm install --prod && pnpm build
+# Build
+RUN pnpm build
 
 FROM node:18-alpine
 
 WORKDIR /apps
 
+# Install netcat for health checks
+RUN apk add --no-cache netcat-openbsd
+
+# Copy built files and configs
 COPY --from=builder /apps/dumpanddone/apps/server/dist ./dumpanddone/
+COPY --from=builder /apps/dumpanddone/apps/server/package.json ./dumpanddone/
 COPY --from=builder /apps/dumpanddone/apps/server/drizzle ./dumpanddone/
 
+# Install production dependencies
 RUN npm install -g pnpm
-RUN pnpm install --prod
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    cd dumpanddone && \
+    pnpm install --prod --frozen-lockfile
 
+# Create init script
 COPY <<EOF /docker-init.sh
-#!bin/bash
+#!/bin/sh
 
 echo "🔍 Checking for database..."
-
 until nc -z db 5432; do
-    echo "Waiting for database"
+    echo "⏳ Waiting for database..."
     sleep 2
 done
 
-echo "running database migrations"
+echo "📦 Running database migrations..."
 cd /apps/dumpanddone
 pnpm db:generate
 pnpm db:push
 
-echo "starting application"
+echo "🚀 Starting application..."
 exec node dist/index.js
 EOF
 
 RUN chmod +x /docker-init.sh
 CMD ["/docker-init.sh"]
-
-
-

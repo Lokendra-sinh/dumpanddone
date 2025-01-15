@@ -10,6 +10,7 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "clear-cache": "turbo clear-cache",
+    "clear-cache:hard": "pnpm clear-cache && pnpm store prune",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "db:generate": "pnpm --filter @dumpanddone/server run db:generate",
     "db:migrate": "pnpm --filter @dumpanddone/server run db:migrate",

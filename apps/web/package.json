@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "clear-cache": "vite clear-cache && rm -rf node_modules/.vite"
+    "clear-cache": "rm -rf node_modules/.vite dist .turbo node_modules"
   },
   "dependencies": {
     "@ai-sdk/openai": "^0.0.72",

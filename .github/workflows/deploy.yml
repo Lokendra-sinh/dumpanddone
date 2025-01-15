@@ -42,23 +42,28 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Build and push docker image
-        id: docker_build
         uses: docker/build-push-action@v4
         with: 
           context: .
           file: Dockerfile.prod
           push: true
-          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
+          tags: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.sha }}
 
       - name: setup ssh 
-        id: ssh_setup
         run: |
-          echo "🔑 Setting up SSH connection..."
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.HOSTINGER_IP }} >> ~/.ssh/known_hosts
-          echo "✅ SSH setup complete"
+          # Add -H flag and redirect stderr to /dev/null to avoid warnings
+          ssh-keyscan -H ${{ secrets.HOSTINGER_IP }} 2>/dev/null >> ~/.ssh/known_hosts
+          # Verify the key was added
+          echo "🔑 SSH key fingerprint:"
+          ssh-keygen -lf ~/.ssh/known_hosts
+      
+      - name: Test SSH connection
+        run: |
+          echo "🔍 Testing SSH connection..."
+          ssh -o StrictHostKeyChecking=no -T root@${{ secrets.HOSTINGER_IP }} "echo '✅ SSH connection successful!'"
 
       - name: Deploy to remote server
         id: deploy

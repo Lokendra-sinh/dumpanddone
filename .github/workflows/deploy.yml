@@ -5,7 +5,11 @@ env:
 on:
   push:
     branches: [dev]
-    # Removed paths restriction so workflow runs on every push to dev
+
+# 1) Give the workflow's GITHUB_TOKEN the necessary scope (packages: write)
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   deploy:

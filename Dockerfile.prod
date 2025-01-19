@@ -38,7 +38,6 @@ RUN apk add --no-cache netcat-openbsd
 COPY --from=builder /app/apps/server/dist ./dist
 COPY --from=builder /app/apps/server/node_modules ./node_modules
 COPY --from=builder /app/apps/server/package.json ./
-COPY --from=builder /app/apps/server/drizzle ./drizzle
 
 # (Optional) If your server code references any other packages at runtime,
 # and you prefer to copy them individually, you can do so, but copying

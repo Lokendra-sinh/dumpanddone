@@ -1,11 +1,11 @@
 FROM node:18-alpine AS builder
 
-WORKDIR /apps
+WORKDIR /app  # Changed from /apps
 
 # Copy package files first for better caching
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
-COPY apps/server/package.json ./dumpanddone/apps/server/
-COPY packages/types/package.json ./dumpanddone/packages/types/
+COPY apps/server/package.json ./apps/server/
+COPY packages/types/package.json ./packages/types/
 
 # Install dependencies with cache
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
@@ -13,28 +13,27 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 
 # Copy source files
-COPY apps/server ./dumpanddone/apps/server/
-COPY packages/types ./dumpanddone/packages/types/
+COPY apps/server ./apps/server/
+COPY packages/types ./packages/types/
 
 # Build
 RUN pnpm build
 
 FROM node:18-alpine
 
-WORKDIR /apps
+WORKDIR /app
 
 # Install netcat for health checks
 RUN apk add --no-cache netcat-openbsd
 
 # Copy built files and configs
-COPY --from=builder /apps/dumpanddone/apps/server/dist ./dumpanddone/
-COPY --from=builder /apps/dumpanddone/apps/server/package.json ./dumpanddone/
-COPY --from=builder /apps/dumpanddone/apps/server/drizzle ./dumpanddone/
+COPY --from=builder /app/apps/server/dist ./dist
+COPY --from=builder /app/apps/server/package.json ./
+COPY --from=builder /app/apps/server/drizzle ./drizzle
 
 # Install production dependencies
 RUN npm install -g pnpm
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    cd dumpanddone && \
     pnpm install --prod --frozen-lockfile
 
 # Create init script
@@ -48,7 +47,7 @@ until nc -z db 5432; do
 done
 
 echo "📦 Running database migrations..."
-cd /apps/dumpanddone
+cd /app
 pnpm db:generate
 pnpm db:push
 

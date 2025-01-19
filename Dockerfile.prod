@@ -39,9 +39,6 @@ COPY --from=builder /app/apps/server/dist ./dist
 COPY --from=builder /app/apps/server/node_modules ./node_modules
 COPY --from=builder /app/apps/server/package.json ./
 
-# (Optional) If your server code references any other packages at runtime,
-# and you prefer to copy them individually, you can do so, but copying
-# node_modules generally covers everything at runtime.
 
 # Create init script for waiting on the DB and running migrations
 COPY <<EOF /docker-init.sh

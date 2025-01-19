@@ -1,12 +1,12 @@
-name: deploy to development
+name: Deploy to Development
+
 env:
-  ACTIONS_STEP_DEBUG: true  # Enable detailed GitHub Actions logging
+  ACTIONS_STEP_DEBUG: true
 
 on:
   push:
     branches: [dev]
 
-# 1) Give the workflow's GITHUB_TOKEN the necessary scope (packages: write)
 permissions:
   contents: read
   packages: write
@@ -22,10 +22,9 @@ jobs:
           echo "👤 Actor: ${{ github.actor }}"
           echo "📝 Commit message: ${{ github.event.head_commit.message }}"
 
-      - name: checkout the code
-        id: checkout
-        uses: actions/checkout@v2
-        
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: List repository contents
         run: |
           echo "📂 Repository contents:"
@@ -33,60 +32,61 @@ jobs:
           echo "🌲 Directory structure:"
           tree -L 3
 
-      - name: login to github container registry
-        id: login
-        uses: docker/login-action@v2
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Set up docker buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Set lowercase names
         id: names
         run: |
           echo "owner=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-          echo "repo=${{ github.event.repository.name }}" >> $GITHUB_OUTPUT
-      
-      - name: Build and push docker image
-        uses: docker/build-push-action@v4
-        with: 
+          echo "repo=$(echo ${{ github.event.repository.name }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
           context: .
           file: Dockerfile.prod
           push: true
           tags: ghcr.io/${{ steps.names.outputs.owner }}/${{ steps.names.outputs.repo }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: setup ssh 
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          # Add -H flag and redirect stderr to /dev/null to avoid warnings
           ssh-keyscan -H ${{ secrets.HOSTINGER_IP }} 2>/dev/null >> ~/.ssh/known_hosts
-          # Verify the key was added
           echo "🔑 SSH key fingerprint:"
           ssh-keygen -lf ~/.ssh/known_hosts
-      
+
       - name: Test SSH connection
         run: |
           echo "🔍 Testing SSH connection..."
           ssh -o StrictHostKeyChecking=no -T root@${{ secrets.HOSTINGER_IP }} "echo '✅ SSH connection successful!'"
 
       - name: Deploy to remote server
-        id: deploy
         run: |
           echo "🚀 Starting deployment to remote server..."
           ssh -v root@${{ secrets.HOSTINGER_IP }} "
-            set -x  # Print commands before execution
-            
-            echo '📁 Creating directories...'
+            set -x
+
+            # Update system and ensure Docker is installed
+            apt-get update
+            apt-get install -y docker.io docker-compose-plugin
+
+            # Create application directory
             mkdir -p /root/apps/dumpanddone
-            
-            echo '🔑 Creating env file...'
-            cat > /root/apps/dumpanddone/.env << EOL
+
+            # Create environment file
+            cat <<EOF > /root/apps/dumpanddone/.env
             PORT=${{ secrets.PORT }}
             ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
             DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}
@@ -103,17 +103,15 @@ jobs:
             POSTGRES_USER=${{ secrets.POSTGRES_USER }}
             POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
             POSTGRES_DB=${{ secrets.POSTGRES_DB }}
-            EOL
-            echo '✅ Env file created'
-            
-            echo '📝 Creating docker-compose file...'
-            cat > /root/apps/dumpanddone/docker-compose.prod.yaml << EOL
+            EOF
+
+            # Create docker-compose file
+            cat <<EOF > /root/apps/dumpanddone/docker-compose.prod.yaml
             services:
               server:
-                image: ghcr.io/${{ github.repository }}:${{ github.sha }}
+                image: ghcr.io/${{ steps.names.outputs.owner }}/${{ steps.names.outputs.repo }}:${{ github.sha }}
                 restart: unless-stopped
-                environment:
-                  - DATABASE_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@db:5432/${{ secrets.POSTGRES_DB }}
+                env_file: .env
                 depends_on:
                   db:
                     condition: service_healthy
@@ -123,12 +121,9 @@ jobs:
               db:
                 image: postgres:15
                 restart: unless-stopped
-                volumes: 
+                env_file: .env
+                volumes:
                   - postgres_data:/var/lib/postgresql/data
-                environment:
-                  - POSTGRES_USER=${{ secrets.POSTGRES_USER }}
-                  - POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-                  - POSTGRES_DB=${{ secrets.POSTGRES_DB }}
                 healthcheck:
                   test: ['CMD-SHELL', 'pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }}']
                   interval: 30s
@@ -138,30 +133,23 @@ jobs:
 
             volumes:
               postgres_data:
-            EOL
-            echo '✅ Docker-compose file created'
-            
-            echo '🔐 Logging into GitHub Container Registry...'
-            docker login ghcr.io -u ${{ github.actor }} -p ${{ github.token }}
-            
-            echo '📦 Pulling latest images...'
+            EOF
+
+            # Login to GitHub Container Registry
+            echo '${{ github.token }}' | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Deploy using docker-compose
             cd /root/apps/dumpanddone
             docker compose -f docker-compose.prod.yaml pull
-            
-            echo '🚀 Starting containers...'
             docker compose -f docker-compose.prod.yaml up -d
-            
-            echo '🔍 Checking container status...'
+
+            # Show deployment status
             docker compose -f docker-compose.prod.yaml ps
-            
-            echo '📜 Showing container logs...'
             docker compose -f docker-compose.prod.yaml logs --tail=100
-            
-            echo '✅ Deployment complete!'
           "
 
       - name: Verify deployment
-        if: always()  # Run even if previous step fails
+        if: always()
         run: |
           echo "🔍 Verifying deployment..."
           ssh root@${{ secrets.HOSTINGER_IP }} "

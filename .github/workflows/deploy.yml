@@ -151,11 +151,19 @@ jobs:
       - name: Verify deployment
         if: always()
         run: |
-          echo "🔍 Verifying deployment..."
-          ssh root@${{ secrets.HOSTINGER_IP }} "
-            cd /root/apps/dumpanddone
-            echo '📊 Container status:'
-            docker compose -f docker-compose.prod.yaml ps
-            echo '📜 Recent logs:'
-            docker compose -f docker-compose.prod.yaml logs --tail=50
-          "
+            echo "🔍 Verifying deployment..."
+            ssh root@${{ secrets.HOSTINGER_IP }} "
+              set -x
+  
+              # Ensure Docker is installed here, too, if your environment is ephemeral
+              apt-get update
+              apt-get install -y docker.io docker-compose-plugin
+  
+              cd /root/apps/dumpanddone
+  
+              echo '📊 Container status:'
+              docker compose -f docker-compose.prod.yaml ps
+  
+              echo '📜 Recent logs:'
+              docker compose -f docker-compose.prod.yaml logs --tail=50
+            "

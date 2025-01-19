@@ -1,42 +1,50 @@
+##
+# 1) Builder Stage
+##
 FROM node:18-alpine AS builder
 
-WORKDIR /app  # Changed from /apps
+# Create app directory
+WORKDIR /app
 
-# Copy package files first for better caching
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
-COPY apps/server/package.json ./apps/server/
-COPY packages/types/package.json ./packages/types/
+# Copy the entire monorepo (including packages/, apps/, etc.)
+# NOTE: If your .dockerignore excludes something critical, remove it from .dockerignore.
+COPY . .
 
-# Install dependencies with cache
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    npm install -g pnpm && \
+# Globally install pnpm, then install all dependencies in the monorepo
+RUN npm install -g pnpm && \
     pnpm install --frozen-lockfile
 
-# Copy source files
-COPY apps/server ./apps/server/
-COPY packages/types ./packages/types/
-
-# Build
+# Build all packages (including the server)
+# e.g. if "pnpm build" internally runs `turbo build` for the monorepo
 RUN pnpm build
 
+
+##
+# 2) Final Stage
+##
 FROM node:18-alpine
 
+# Create the app directory
 WORKDIR /app
 
 # Install netcat for health checks
 RUN apk add --no-cache netcat-openbsd
 
-# Copy built files and configs
+# For the simplest approach, copy the entire server artifact from builder:
+#  - Dist folder from apps/server
+#  - Node_modules for the server (already built/installed in builder stage)
+#  - drizzle directory if you use Drizzle migrations
+#  - package.json so we know the version/metadata (optional but often useful)
 COPY --from=builder /app/apps/server/dist ./dist
+COPY --from=builder /app/apps/server/node_modules ./node_modules
 COPY --from=builder /app/apps/server/package.json ./
 COPY --from=builder /app/apps/server/drizzle ./drizzle
 
-# Install production dependencies
-RUN npm install -g pnpm
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    pnpm install --prod --frozen-lockfile
+# (Optional) If your server code references any other packages at runtime,
+# and you prefer to copy them individually, you can do so, but copying
+# node_modules generally covers everything at runtime.
 
-# Create init script
+# Create init script for waiting on the DB and running migrations
 COPY <<EOF /docker-init.sh
 #!/bin/sh
 
@@ -56,4 +64,8 @@ exec node dist/index.js
 EOF
 
 RUN chmod +x /docker-init.sh
+
+# We’re exposing 4000 for clarity (the server uses 4000 by default)
+EXPOSE 4000
+
 CMD ["/docker-init.sh"]
